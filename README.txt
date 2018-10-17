@@ -25,13 +25,7 @@ SYNOPSIS
 
  OAUTH CREDENTIALS FILE TO ACCESS SERVCICES
 
-    While I personally find the goauth tool useful to create local auth
-    credentials and can work with the code, you may find it more useful to
-    do it all yourself using an approach like at
-    https://blog.ludin.org/2017/01/15/using-google-apis-with-perl-part-3-si
-    mplicity/
-
-    This code still retains a lot of the bad smells of the parents.
+    TODO
 
  api_query
 

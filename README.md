@@ -1,3 +1,8 @@
+[![Build Status](https://travis-ci.org/pscott-au/WebService-GoogleAPI-Client.svg?branch=master)](https://travis-ci.org/pscott-au//WebService-GoogleAPI-Client)
+[![Coverage Status](https://coveralls.io/repos/github/pscott-au/C/WebService-GoogleAPI-Client/badge.svg?branch=master)](https://coveralls.io/github/pscott-au/C/WebService-GoogleAPI-Client?branch=master)
+[![CPAN Version](https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.svg)](http://search.cpan.org/~localshop//WebService-GoogleAPI-Client/lib/WebService/GoogleAPI/Client.pm)
+
+
 ![Perl Google APIs Client Library](https://pscott-au.github.io/WebService-Google-Client/perl-google-apis-client-library.png)
 
 # NAME
@@ -211,8 +216,7 @@ NB: Currently this package space contains an alternate implementation so CPAN in
  - Aspiring to [Trunk Based Developent](https://paulhammant.com/2013/04/05/what-is-trunk-based-development/)
  - Use perlcritic nad perltidy if my bracer style is offensive
  - This is my first module using dzilla to package a module - I'm not completely sold on it and may be using it incorrectly - advice on improving usage welcome
- - 
-
+ 
 
 
 # SEE ALSO
@@ -222,7 +226,7 @@ NB: Currently this package space contains an alternate implementation so CPAN in
 
 # AUTHORS
 
-- Peter Scott <peter@localshop.com.au>
+- Peter Scott <peter@pscott.com.au>
 
 # CONTRIBUTORS
 
@@ -230,7 +234,8 @@ NB: Currently this package space contains an alternate implementation so CPAN in
 
 # COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2017-2018 by Pavel Serikov, Peter Scott and others.
+This software is copyright (c) 2017-2018 by Peter Scott and others.
 
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
+This is free software, licensed under:
+
+      The Apache License, Version 2.0, January 2004
