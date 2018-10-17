@@ -1,0 +1,16 @@
+-pbp -nst    # Start with Perl Best Practices - not sure how to drive and cuddles my braces
+-w       # Show all warnings
+-iob     # Ignore old breakpoints
+-l=180    # 80 characters per line
+-mbl=2   # No more than 2 blank lines
+-i=2     # Indentation is 2 columns
+-ci=2    # Continuation indentation is 2 columns
+-vt=0    # vertical tightness
+-pt=0    # parenthesis tightness
+-bt=0    # brace tightness
+-sbt=2   # square bracket tightness
+-wn      # Weld nested containers
+-isbc    # Don't indent comments without leading space
+-sbl     # sub-brace on new line
+-bl      # Opening Braces Left
+-b -bext='/' # operwrite the file and delete backup if no errors
