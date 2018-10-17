@@ -17,7 +17,7 @@ my $default_file = $ENV{'GOOGLE_TOKENSFILE'} || 'gapi.json';
 my $user         = $ENV{'GMAIL_FOR_TESTING'} || ''; ## TODO - populate from gapi.json if needed
 my $gapi = WebService::GoogleAPI::Client->new( debug => 0 );
 
-if ( $gapi->auth_storage->file_exists($default_file) ) {
+if ( -e $default_file ) {
     $gapi->auth_storage->setup( { type => 'jsonfile', path => $default_file } );
     $gapi->user($user);
 
