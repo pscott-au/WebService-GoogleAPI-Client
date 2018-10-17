@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/pscott-au/WebService-GoogleAPI-Client.svg?branch=master)](https://travis-ci.org/pscott-au//WebService-GoogleAPI-Client)
-[![Coverage Status](https://coveralls.io/repos/github/pscott-au/C/WebService-GoogleAPI-Client/badge.svg?branch=master)](https://coveralls.io/github/pscott-au/C/WebService-GoogleAPI-Client?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/pscott-au/WebService-GoogleAPI-Client/badge.svg?branch=master)](https://coveralls.io/github/pscott-au/WebService-GoogleAPI-Client?branch=master)
 [![CPAN Version](https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.svg)](http://search.cpan.org/~localshop//WebService-GoogleAPI-Client/lib/WebService/GoogleAPI/Client.pm)
 
 
