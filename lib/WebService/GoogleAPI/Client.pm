@@ -316,7 +316,9 @@ sub has_scope_to_access_api_endpoint
 {
   my ( $self, $api_ep ) = @_;
   
-  if ( keys ( my $method_spec = $self->extract_method_discovery_detail_from_api_spec( $api_ep )) >0  ) ## empty hash indicates failure
+  my $method_spec = $self->extract_method_discovery_detail_from_api_spec( $api_ep );
+
+  if ( keys( %$method_spec ) > 0 )    ## empty hash indicates failure
   {
     my $configured_scopes = $self->ua->get_scopes_as_array(); ## get user scopes arrayref
     ## create a hashindex to facilitate quick lookups
