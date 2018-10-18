@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/pscott-au/WebService-GoogleAPI-Client.svg?branch=master)](https://travis-ci.org/pscott-au//WebService-GoogleAPI-Client)
 [![Coverage Status](https://coveralls.io/repos/github/pscott-au/WebService-GoogleAPI-Client/badge.svg?branch=master)](https://coveralls.io/github/pscott-au/WebService-GoogleAPI-Client?branch=master)
-[![CPAN Version](https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.svg)](http://search.cpan.org/~localshop//WebService-GoogleAPI-Client/lib/WebService/GoogleAPI/Client.pm)
+[![CPAN Version](https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.svg)](http://search.cpan.org/~localshop/WebService-GoogleAPI-Client/lib/WebService/GoogleAPI/Client.pm)
 
 
 ![Perl Google APIs Client Library](https://pscott-au.github.io/WebService-Google-Client/perl-google-apis-client-library.png)
@@ -210,13 +210,6 @@ sudo dzil install
 ## TODO: 
 
 - UNDER REVIEW
-
-# CONTRIBUTING AS A DEVELOPER
-
- - Aspiring to [Trunk Based Developent](https://paulhammant.com/2013/04/05/what-is-trunk-based-development/)
- - Use perlcritic nad perltidy if my bracer style is offensive
- - This is my first module using dzilla to package a module - I'm not completely sold on it and may be using it incorrectly - advice on improving usage welcome
- 
 
 
 # SEE ALSO

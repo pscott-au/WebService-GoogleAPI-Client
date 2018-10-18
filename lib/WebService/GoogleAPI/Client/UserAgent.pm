@@ -68,10 +68,13 @@ sub build_http_transaction
 {
   my ( $self, $params ) = @_;
   ## hack to allow method option as alias for httpMethod
+
   $params->{ httpMethod } = $params->{method} if defined $params->{method};
+  $params->{ httpMethod } = '' unless defined $params->{ httpMethod };
+
   my $http_method   = uc( $params->{ httpMethod } ) || 'GET';    # uppercase ?
   my $optional_data = $params->{ options }          || '';
-  my $path          = $params->{ path }             || croak('path parameter required for build_http_transaction');
+  my $path          = $params->{ path }             || carp('path parameter required for build_http_transaction');
   my $no_auth       = $params->{no_auth} || 0; ## default to including auth header - ie not setting no_auth
   carp 'Attention! You are using POST, but no payload specified' if ( ( $http_method eq  'POST' ) && !defined $optional_data );
   carp "build_http_transaction:: $http_method $path " if $self->debug;

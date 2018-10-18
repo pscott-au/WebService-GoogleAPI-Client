@@ -56,12 +56,21 @@ has 'discovery' => ( handles => [qw/ get_method_meta discover_all extract_method
 
 ## provides a way of augmenting constructor (new) without overloading it 
 ##  see https://metacpan.org/pod/distribution/Moose/lib/Moose/Manual/Construction.pod if like me you an new to Moose
+
+=head2 BUILD
+
+WebService::GoogleAPI::Client->new( user => 'useremail@sdf.com', gapi_json => '/fullpath/gapi.json' );
+
+=cut
+
 sub BUILD 
 {
     my ($self, $params) = @_;
 
     $self->auth_storage->setup( { type => 'jsonfile', path => $params->{gapi_json} } ) if ( defined $params->{gapi_json});
     $self->user( $params->{user} )                                                     if ( defined $params->{user});
+
+    ## how to handle chi as a parameter
     $self->discovery->chi( $self->chi ); ## is this redundant? set in default?
 
 
@@ -158,13 +167,15 @@ sub api_query
   {
     $params = {@params_array}; ## what happens if not even count 
   }
-carp(Dumper $params) if $self->debug>10;
+  carp(Dumper $params) if $self->debug>10;
 
   my @teapot_errors = (); ## used to collect pre-query validation errors - if set we return a response with 418 I'm a teapot
   
   ## pre-query validation if api_id parameter is included
   ## push any critical issues onto @teapot_errors
   ## include interpolation and defaults if required because user has ommitted them
+
+  
   if ( defined $params->{api_endpoint_id} ) 
   {    
 
@@ -196,7 +207,9 @@ carp(Dumper $params) if $self->debug>10;
       warn( "API Endpoint $params->{api_endpoint_id} discovered specification didn't include expected 'parameters' keyed HASH structure" ) unless ref($method_discovery_struct->{parameters}) eq 'HASH';
 
       ## Set default path iff not set by user - NB - will prepend baseUrl later
-      $params->{path} = "$method_discovery_struct->{path}" unless defined $params->{path};
+      $params->{path} = $method_discovery_struct->{path} unless defined $params->{path};
+      push @teapot_errors, 'path is a required parameter' unless defined $params->{path};
+
       foreach my $meth_param_spec ( keys %{ $method_discovery_struct->{parameters} })
       {
         ## set default value if is not provided within $params->{options} - nb technically not required but provides visibility of the params if examining the options when debugging
@@ -208,12 +221,12 @@ carp(Dumper $params) if $self->debug>10;
                        );
         ## this looks to be clobbering all options - TODO - review and stop clobbering if already defined
 
-carp("checking discovery spec'd parameter - $meth_param_spec") if $self->debug>10;
-#carp("$meth_param_spec  has a user option value defined") if ( defined $params->{options}{$meth_param_spec} );
+        carp("checking discovery spec'd parameter - $meth_param_spec") if $self->debug>10;
+        #carp("$meth_param_spec  has a user option value defined") if ( defined $params->{options}{$meth_param_spec} );
         if ( $params->{path} =~ /\{.+\}/xms ) ## there are un-interpolated variables in the path - try to fill them for this param if reqd
         {
-carp("$params->{path} includes unfilled variables ") if $self->debug>10;
-carp Dumper $params if $self->debug>10;
+          carp("$params->{path} includes unfilled variables ") if $self->debug>10;
+          carp Dumper $params if $self->debug>10;
           ## interpolate variables into URI if available and not filled
           if ( $method_discovery_struct->{parameters}{$meth_param_spec}{'location'} eq 'path' ) ## this is a path variable
           {
@@ -223,7 +236,7 @@ carp Dumper $params if $self->debug>10;
               ## if provided as an option               
               if (defined $params->{options}{$meth_param_spec})
               {
-carp("DEBUG: $meth_param_spec is defined in param->{options}") if $self->debug>10;
+                carp("DEBUG: $meth_param_spec is defined in param->{options}") if $self->debug>10;
                 $params->{path} =~ s/\{$meth_param_spec\}/$params->{options}{$meth_param_spec}/xsmg;
                 ## TODO - possible source of errors in future - do we need to undefine the option here?
                   ## undefining it so that it doesn't break post contents
@@ -288,6 +301,9 @@ carp("DEBUG: $meth_param_spec is defined in param->{options}") if $self->debug>1
 
   }
 
+
+  push @teapot_errors, 'path is a required parameter' unless defined $params->{path};
+
   if ( @teapot_errors > 0 ) ## carp and include in 418 response body the teapot errors
   {
     carp( join("\n", @teapot_errors) ) if $self->debug;
@@ -296,6 +312,7 @@ carp("DEBUG: $meth_param_spec is defined in param->{options}") if $self->debug>1
   else
   {
     #carp Dumper $params;
+
     return $self->ua->validated_api_query( $params );
 
 
@@ -320,7 +337,7 @@ warns and returns 0 on error ( eg user or config not specified etc )
 sub has_scope_to_access_api_endpoint
 {
   my ( $self, $api_ep ) = @_;
-  
+  return 0 unless defined $api_ep; return 0 if $api_ep eq ''; 
   my $method_spec = $self->extract_method_discovery_detail_from_api_spec( $api_ep );
 
   if ( keys( %$method_spec ) > 0 )    ## empty hash indicates failure
@@ -374,6 +391,8 @@ SEE ALSO:
 
 Returns an array list of all the available API's described in the API Discovery Resource
 that is either fetched or cached in CHI locally for 30 days.
+
+WHen called in a scalar context returns the list as a comma joined string.
 
 DELEGATED FROM WebService::GoogleAPI::Client::Discovery
 
@@ -446,7 +465,7 @@ requests in a way that is as portable to alternative approaches as possible.
 
 =item * L<Google Cloud Blog https://www.blog.google/products/google-cloud/>
 
-=item * L<Moo::Google> - The original code base later forked into L<WebService::Google::Client> by Steve Dondley. 
+=item * L<Moo::Google> - The original code base later forked into L<WebService::Google::Client> by Steve Dondley. Some shadows of the original design remain
 
 =item * L<Google Swagger API https://github.com/APIs-guru/google-discovery-to-swagger> 
 

@@ -23,3 +23,6 @@
 
 
 Github Repo: [https://github.com/pscott-au/WebService-GoogleAPI-Client]
+
+## A few notes
+`dzil cover -outputdir docs/cover/`

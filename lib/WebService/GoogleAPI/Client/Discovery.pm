@@ -175,12 +175,13 @@ sub discover_all
 {
   
   my ( $self, $force ) = @_;
+
   if ( my $expires_at = $self->chi->get_expires_at(  'https://www.googleapis.com/discovery/v1/apis' ) && not $force ) 
   {
     #carp "discovery_data cached data expires in ", scalar($expires_at) - time(), " seconds\n" if  ($self->debug > 2);
     return $self->chi->get( 'https://www.googleapis.com/discovery/v1/apis' );
   }
-  else
+  else ## 
   {
     #return $self->chi->get('https://www.googleapis.com/discovery/v1/apis') if ($self->chi->get('https://www.googleapis.com/discovery/v1/apis'));
     my $ret = $self->ua->validated_api_query( 'https://www.googleapis.com/discovery/v1/apis' );
@@ -235,11 +236,16 @@ sub augment_discover_all_with_unlisted_experimental_api
   my ( $self, $api_spec ) = @_;
 
   my $all = $self->discover_all();
-
+#warn Dumper $all;
   ## fail if any of the expected fields are not provided
   foreach my $field ( qw/version title description id kind documentationLink discoveryRestUrl name/ ) ## icons preferred 
   {
-    croak("$field not specified in provided api spec") unless defined $api_spec->{$field};
+    if ( not defined $api_spec->{$field} )
+    {
+      carp("required $field in provided experimental api spec in not defined - returning without augmentation");
+      return $all;
+    }
+    
   }
   
 
@@ -439,13 +445,24 @@ sub api_verson_urls
 }
 ########################################################
 
+=head2 C<extract_method_discovery_detail_from_api_spec>
+
+$self->extract_method_discovery_detail_from_api_spec( $tree, $api_version )
+
+returns a hashref representing the discovery specification for the method identified by $tree in dotted API format such as texttospeech.text.synthesize
+
+returns an empty hashref if not found
+
+=cut
+
 
 ########################################################
 sub extract_method_discovery_detail_from_api_spec
 {
   my ( $self, $tree, $api_version ) = @_; 
-  ## where tree is the method in format from extract_resource_methods_from_api_spec() like projects.models.versions.get
+  ## where tree is the method in format from _extract_resource_methods_from_api_spec() like projects.models.versions.get
   ##   the root is the api id - further '.' sep levels represent resources until the tailing label that represents the method
+  return {} unless defined $tree;
   my @nodes = split /\./smx, $tree;
   croak("tree structure '$tree' must contain at least 2 nodes including api id, [list of hierarchical resources ] and method - not " . scalar(@nodes) ) unless scalar(@nodes)>1;
 
@@ -463,7 +480,7 @@ sub extract_method_discovery_detail_from_api_spec
   ## TODO: confirm that spec available for api version
   my $api_spec = $self->get_api_discovery_for_api_id({api => $api_id, version => $api_version });
   ## TODO - check for failure?
-  my $all_api_methods =  $self->extract_resource_methods_from_api_spec( $api_id, $api_spec );
+  my $all_api_methods =  $self->_extract_resource_methods_from_api_spec( $api_id, $api_spec );
   if (defined $all_api_methods->{$tree})
   {
     return $all_api_methods->{$tree};
@@ -477,7 +494,7 @@ sub extract_method_discovery_detail_from_api_spec
 ########################################################
 
 ########################################################
-sub extract_resource_methods_from_api_spec
+sub _extract_resource_methods_from_api_spec
 {
   my ( $self, $tree, $api_spec, $ret ) = @_;
   $ret = {} unless defined $ret;
@@ -495,7 +512,7 @@ sub extract_resource_methods_from_api_spec
     foreach my $resource ( keys %{$api_spec->{resources}}  )
     {
       ## NB - recursive traversal down tree of api_spec resources
-      $self->extract_resource_methods_from_api_spec( "$tree.$resource", $api_spec->{resources}{$resource}, $ret );
+      $self->_extract_resource_methods_from_api_spec( "$tree.$resource", $api_spec->{resources}{$resource}, $ret );
     }
   }
   return $ret;
@@ -533,8 +550,8 @@ sub methods_available_for_google_api_id
   my ( $self, $api_id, $version ) = @_;
   $version = $self->latest_stable_version( $api_id ) unless $version;
   ## TODO: confirm that spec available for api version
-  my $api_spec = $self->get_api_discovery_for_api_id({api => $api_id, version => $version });
-  my $methods  = $self->extract_resource_methods_from_api_spec( $api_id, $api_spec );
+  my $api_spec = $self->get_api_discovery_for_api_id( {api => $api_id, version => $version } );
+  my $methods  = $self->_extract_resource_methods_from_api_spec( $api_id, $api_spec );
   return $methods;
 }
 ########################################################
@@ -554,7 +571,9 @@ sub list_of_available_google_api_ids
   my ( $self ) = @_;
   my $aapis = $self->available_APIs(); ## array of hashes
   my @api_list = map { $_->{name} } @$aapis;
-  return @api_list;
+  return wantarray ? @api_list : join(',', @api_list); ## allows to be called in either list or scalar context
+  #return @api_list;
+  
 }
 ########################################################
 

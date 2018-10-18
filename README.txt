@@ -4,7 +4,7 @@ NAME
 
 VERSION
 
-    version 0.10
+    version 0.11
 
 SYNOPSIS
 
@@ -26,6 +26,11 @@ SYNOPSIS
  OAUTH CREDENTIALS FILE TO ACCESS SERVCICES
 
     TODO
+
+ BUILD
+
+    WebService::GoogleAPI::Client->new( user => 'useremail@sdf.com',
+    gapi_json => '/fullpath/gapi.json' );
 
  api_query
 
@@ -115,6 +120,9 @@ SYNOPSIS
     Discovery Resource that is either fetched or cached in CHI locally for
     30 days.
 
+    WHen called in a scalar context returns the list as a comma joined
+    string.
+
     DELEGATED FROM WebService::GoogleAPI::Client::Discovery
 
 FUNCTIONAL CLASS PROPERTIES
@@ -180,7 +188,8 @@ SEE ALSO
       https:
 
       * Moo::Google - The original code base later forked into
-      WebService::Google::Client by Steve Dondley.
+      WebService::Google::Client by Steve Dondley. Some shadows of the
+      original design remain
 
       * "/github.com/APIs-guru/google-discovery-to-swagger" in Google
       Swagger API https:
