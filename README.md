@@ -159,7 +159,7 @@ sudo dzil install
 
 ## Install from CPAN
 
-NB: Currently this package space contains an alternate implementation so CPAN installation is not possible.
+  sudo cpanm WebService::GoogleAPI::Client
 
 
 ## TYPICAL USAGE QUICKSTART

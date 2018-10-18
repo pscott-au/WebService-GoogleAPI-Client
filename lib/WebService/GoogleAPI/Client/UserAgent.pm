@@ -44,13 +44,12 @@ sub header_with_bearer_auth_token
   if ( $self->access_token )
   {
     $headers->{ 'Authorization' } = 'Bearer ' . $self->access_token;
-    return $headers;
   }
   else
   {
-    croak 'No access_token, can\'t build headers';
+    carp 'No access_token, can\'t build Auth header';
   }
-
+  return $headers;
 }
 
 =head2 build_http_transaction
@@ -76,7 +75,7 @@ sub build_http_transaction
   my $no_auth       = $params->{no_auth} || 0; ## default to including auth header - ie not setting no_auth
   carp 'Attention! You are using POST, but no payload specified' if ( ( $http_method eq  'POST' ) && !defined $optional_data );
   carp "build_http_transaction:: $http_method $path " if $self->debug;
-  croak "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . Dumper $params unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
+  carp "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . Dumper $params unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
   
 
   my $headers = {};
@@ -149,11 +148,7 @@ sub validated_api_query
 
   if ( ( $res->code == 401 ) && $self->do_autorefresh )
   {
-    #my $attempt = 1; ## is this used? perhaps intent was to allow requery with delays on fail ?
-
-    #while ($res->{error}{message} eq 'Invalid Credentials')  {
-    #while ( $res->code == 401 ) ## won't this just continue making requests ? - replacing with if
-    if ( $res->code == 401 )
+    if ( $res->code == 401 ) ## redundant - was there something else in mind ?
     {
       croak "No user specified, so cant find refresh token and update access_token"         unless $self->user;
       carp "401 response - access_token was expired. Attemptimg to update it automatically ..." if $self->debug;

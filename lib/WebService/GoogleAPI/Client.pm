@@ -181,7 +181,12 @@ carp(Dumper $params) if $self->debug>10;
       ## set http method to default if unset
       if ( not defined $params->{method} )
       {
-        $params->{method} = $method_discovery_struct->{httpMethod} || croak("API Endpoint discovered specification didn't include expected httpMethod value");
+        $params->{method} = $method_discovery_struct->{httpMethod} || carp("API Endpoint discovered specification didn't include expected httpMethod value");
+        if (not defined $params->{method}) ## 
+        {
+          carp('setting to GET but this may well be incorrect');
+          $params->{method} = 'GET';
+        }
       }
       elsif ( $params->{method} !~ /^$method_discovery_struct->{httpMethod}$/sxim ) 
       {
@@ -441,7 +446,7 @@ requests in a way that is as portable to alternative approaches as possible.
 
 =item * L<Google Cloud Blog https://www.blog.google/products/google-cloud/>
 
-=item * L<Moo::Google> - The original code base later forked into L<WebService::Google> by Steve Dondley. This is where this code started believing that I could clean it up. In hindisght it would have been much easier to start from scratch.
+=item * L<Moo::Google> - The original code base later forked into L<WebService::Google::Client> by Steve Dondley. 
 
 =item * L<Google Swagger API https://github.com/APIs-guru/google-discovery-to-swagger> 
 

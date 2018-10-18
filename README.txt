@@ -180,9 +180,7 @@ SEE ALSO
       https:
 
       * Moo::Google - The original code base later forked into
-      WebService::Google by Steve Dondley. This is where this code started
-      believing that I could clean it up. In hindisght it would have been
-      much easier to start from scratch.
+      WebService::Google::Client by Steve Dondley.
 
       * "/github.com/APIs-guru/google-discovery-to-swagger" in Google
       Swagger API https:
@@ -195,8 +193,7 @@ AUTHOR
 
 COPYRIGHT AND LICENSE
 
-    This software is Copyright (c) 2017-2018 by Pavel Serikov, Peter Scott
-    and others.
+    This software is Copyright (c) 2017-2018 by Peter Scott and others.
 
     This is free software, licensed under:
 

@@ -27,3 +27,4 @@ examples/*.json
 examples/*.png
 **/delme*
 *.json
+docs/cover/*
