@@ -3,7 +3,7 @@
 [![CPAN Version](https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.svg)](http://search.cpan.org/~localshop/WebService-GoogleAPI-Client/lib/WebService/GoogleAPI/Client.pm)
 
 
-![Perl Google APIs Client Library](https://pscott-au.github.io/WebService-Google-Client/perl-google-apis-client-library.png)
+![Perl Google APIs Client Library](https://pscott-au.github.io/WebService-GoogleAPI-Client/perl-google-apis-client-library.png)
 
 # NAME
 
@@ -22,7 +22,7 @@ The guiding principal is to minimise the conceptual load when using the Client a
 
 NB: To create or modify an authorization configuration file with scope and user tokens in current folder run _goauth_ CLI tool to interactively create the JSON configuration and launch a local HTTP server to acquire authenticated access permissions with a Google email account. 
 
-![goauth screen capture](https://pscott-au.github.io/WebService-Google-Client/goauth-login-cap.gif)
+![goauth screen capture](https://pscott-au.github.io/WebService-GoogleAPI-Client/goauth-login-cap.gif)
 
 See ````perldoc goauth```` for more detail.
 
