@@ -7,20 +7,49 @@ package WebService::GoogleAPI::Client;
 
 Access Google API Services Version 1 using an OAUTH2 User Agent
 
-
-
-    ## use goauth CLI helper to create the OATH credentials file ( see perldoc goauth )
-
     use WebService::GoogleAPI::Client;
     use Data::Dumper;
 
-    my $gapi = WebService::GoogleAPI::Client->new(debug => 0); # my $gapi = WebService::GoogleAPI::Client->new(access_token => '');
-    my $user = 'peter@pscott.com.au'; # full gmail or G-Suite email
+    ## assumes gapi.json configuration in working directory with scoped project and user authorization
+    
+    my $gapi_client = WebService::GoogleAPI::Client->new( debug => 1, gapi_json => './gapi.json', user=> 'peter@pscott.com.au' );
 
-    $gapi->auth_storage->setup({type => 'jsonfile', path => './gapi.json' }); # by default
+    ## Completely manually constructed API End-Point Request to obtain Perl Data Structure converted from JSON response.
+    print Dumper $gapi_client->api_get(  userId => 'me'   )->json;
 
-    $gapi->user($user);       ## allows to select user configuration by google auth'd email address
-    $gapi->do_autorefresh(1); ## refresh auth token with refresh token if auth session has expired
+    ## using dotted API Endpoint id to invoke helper validation and default value interpolations etc to send email to self
+    use Email::Simple;    ## RFC2822 formatted messages
+    use MIME::Base64;
+    my $my_email_address = 'peter@shotgundriver.com'
+
+
+    my $raw_email_payload = encode_base64( Email::Simple->create( header => [To => $my_email_address, 
+                                                                             From => $my_email_address, 
+                                                                             Subject =>"Test email from '$my_email_address' ",], 
+                                                                             body => "This is the body of email to '$my_email_address'", 
+                                                                )->as_string 
+                                        );
+
+    $gapi_client->api_query( 
+                            api_endpoint_id => 'gmail.users.messages.send',
+                            options    => { raw => $raw_email_payload },
+                        );
+
+
+
+    my $text_to_speech_request_options =  {
+            'input' => {
+            'text' => 'Using the Web-Services-Google-Client Perl module, it is now a simple matter to access all of the Google API Resources in a consistent manner.'
+            },
+            'voice' => {
+            'languageCode' => 'en-gb',
+            'name' => 'en-GB-Standard-A',
+            'ssmlGender' => 'FEMALE'
+            },
+            'audioConfig' => {
+            'audioEncoding'=> 'MP3'
+            }
+        };
 
 
 =head2 OAUTH CREDENTIALS FILE TO ACCESS SERVCICES
@@ -30,7 +59,7 @@ TODO
 =cut
 
 use Data::Dumper;
-use Moose;
+use Moo;
 use WebService::GoogleAPI::Client::UserAgent;
 use WebService::GoogleAPI::Client::Discovery;
 use Carp;

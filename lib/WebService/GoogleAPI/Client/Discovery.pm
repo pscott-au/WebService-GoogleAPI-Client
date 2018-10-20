@@ -61,9 +61,7 @@ sub get_api_discovery_for_api_id
 {
   my ( $self, $params ) = @_;
   ## TODO: warn if user doesn't have the necessary scope .. no should stil be able to examine 
-  ## TODO: consolidate the http method calls to a single function - ie - discover_all - simplistic quick fix -  assume that if no param then endpoint is as per discover_all
-
-  
+  ## TODO: consolidate the http method calls to a single function - ie - discover_all - simplistic quick fix -  assume that if no param then endpoint is as per discover_all  
 
   $params = { api => $params } if ref( $params) eq ''; ## scalar parameter not hashref - so assume is intended to be $params->{api}
   ## trim any resource, method or version details in api id
@@ -178,13 +176,16 @@ sub discover_all
 
   if ( my $expires_at = $self->chi->get_expires_at(  'https://www.googleapis.com/discovery/v1/apis' ) && not $force ) 
   {
-    #carp "discovery_data cached data expires in ", scalar($expires_at) - time(), " seconds\n" if  ($self->debug > 2);
-    return $self->chi->get( 'https://www.googleapis.com/discovery/v1/apis' );
+    carp "discovery_data cached data expires in ", scalar($expires_at) - time(), " seconds\n" if  ($self->debug > 2);
+    my $ret =  $self->chi->get( 'https://www.googleapis.com/discovery/v1/apis' );
+    croak('CHI Discovery should be a hash - got something other') unless ref($ret) eq 'HASH';
+    return $ret;
   }
   else ## 
   {
     #return $self->chi->get('https://www.googleapis.com/discovery/v1/apis') if ($self->chi->get('https://www.googleapis.com/discovery/v1/apis'));
     my $ret = $self->ua->validated_api_query( 'https://www.googleapis.com/discovery/v1/apis' );
+    # if ( $ret->is_status_class(200) ) ## older versions of Mojo::Message::Response don't support is_success .. Require V > 7.12
     if ( $ret->is_success )
     {
       my $all = $ret->json;
@@ -293,7 +294,10 @@ client->discover_all which is delegated to Client::Discovery->discover_all
 sub available_APIs
 {
   my ( $self ) = @_;
-  my $all = $self->discover_all()->{ items };
+  my $d_all = $self->discover_all(); ##
+  warn('no items in discovery data') unless defined $d_all->{ items };
+  return []  unless defined $d_all->{ items };
+  my $all = $d_all->{ items };
 
   #print Dumper $all;
   for my $i ( @$all )

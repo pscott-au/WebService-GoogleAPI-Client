@@ -186,7 +186,7 @@ subtest 'Discovery methods with User Configuration'  => sub {
         note("Running tests with user '$user' using '$default_file' credentials");
 
         ok( $gapi->user($user) eq $user, "\$gapi->user('$user') eq '$user'");
-
+#$ENV{CHI_FILE_PATH} = $ENV{TMPDIR};
         plan( skip_all => 'Skipping network impacting tests unless ENV VAR CHI_FILE_PATH is set'  ) unless defined $ENV{CHI_FILE_PATH};
 
 

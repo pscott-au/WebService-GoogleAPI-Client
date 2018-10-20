@@ -1,7 +1,3 @@
 [TestingAndDebugging::RequireUseStrict]
 equivalent_modules = Modern::Perl
 
-[TestingAndDebugging::RequireUseWarnings]
-equivalent_modules = Modern::Perl
-
-severity = 1
