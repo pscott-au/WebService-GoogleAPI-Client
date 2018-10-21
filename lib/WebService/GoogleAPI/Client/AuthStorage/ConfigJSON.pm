@@ -1,4 +1,5 @@
-use strictures; 
+use strictures;
+
 package WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
 
 # ABSTRACT: Specific methods to fetch tokens from JSON data sources
@@ -17,7 +18,7 @@ has 'debug' => ( is => 'rw', default => 0 );
 
 sub setup
 {
-  my ($self) =   @_;
+  my ( $self ) = @_;
   $tokensfile = Config::JSON->new( $self->pathToTokensFile );
   return $self;
 }
@@ -71,13 +72,13 @@ sub set_access_token_to_storage
 sub get_scopes_from_storage
 {
   my ( $self ) = @_;
-  return $tokensfile->get( 'gapi/scopes'  ); ## NB - returns an array - is stored as space sep list
+  return $tokensfile->get( 'gapi/scopes' );    ## NB - returns an array - is stored as space sep list
 }
 
 sub get_scopes_from_storage_as_array
 {
   my ( $self ) = @_;
-  return [split(' ',$tokensfile->get( 'gapi/scopes') )]; ## NB - returns an array - is stored as space sep list
+  return [split( ' ', $tokensfile->get( 'gapi/scopes' ) )];    ## NB - returns an array - is stored as space sep list
 }
 
 1;

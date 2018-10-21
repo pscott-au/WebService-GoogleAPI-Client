@@ -1,9 +1,11 @@
 #!perl
 
-use strict; use warnings; ## required because I can't work out how to get percritic to use my modern config
+use strict;
+use warnings;    ## required because I can't work out how to get percritic to use my modern config
+
 package goauth;
 
-# ABSTRACT: CLI tool with mini http server for negotiating Google OAuth2 Authorisation access tokens that allow offline access to Google API Services on behalf of the user. 
+# ABSTRACT: CLI tool with mini http server for negotiating Google OAuth2 Authorisation access tokens that allow offline access to Google API Services on behalf of the user.
 
 =pod
 
@@ -90,9 +92,9 @@ else
 if ( -e $filename )
 {
   say "File $filename exists";
-  input_if_not_exists( ['gapi/client_id', 'gapi/client_secret', 'gapi/scopes'] ); ## this potentially allows mreging with a json file with data external
-                                                                                  ## to the app or to augment missing scope from file generated from 
-                                                                                  ##  earlier versions of goauth from other libs
+  input_if_not_exists( ['gapi/client_id', 'gapi/client_secret', 'gapi/scopes'] );    ## this potentially allows mreging with a json file with data external
+  ## to the app or to augment missing scope from file generated from
+  ##  earlier versions of goauth from other libs
   runserver();
 }
 else
@@ -114,7 +116,8 @@ sub setup
 
   $oauth->{ client_secret } = _stdin() || croak( 'client secret is required and has no default' );
 
-  print 'scopes ( space sep list - see https://developers.google.com/identity/protocols/googlescopes ): default is - email profile https://www.googleapis.com/auth/plus.profile.emails.read '
+  print
+    'scopes ( space sep list - see https://developers.google.com/identity/protocols/googlescopes ): default is - email profile https://www.googleapis.com/auth/plus.profile.emails.read '
     . "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/contacts.readonly https://mail.google.com\n";
 
   $oauth->{ scopes } = _stdin();    ## no croak because empty string is allowed an will evoke defaults
@@ -175,7 +178,7 @@ sub runserver
       key           => $config->get( 'gapi/client_id' ),                                    # $config->{gapi}{client_id},
       secret        => $config->get( 'gapi/client_secret' ),                                #$config->{gapi}{client_secret},
       authorize_url => 'https://accounts.google.com/o/oauth2/v2/auth?response_type=code',
-      token_url     => 'https://www.googleapis.com/oauth2/v4/token' ## NB Google credentials.json specifies "https://www.googleapis.com/oauth2/v3/token" 
+      token_url     => 'https://www.googleapis.com/oauth2/v4/token'                         ## NB Google credentials.json specifies "https://www.googleapis.com/oauth2/v3/token"
     }
   };
 
@@ -205,14 +208,14 @@ sub runserver
     my $tokens;
     app->log->info( "Will store tokens in " . $config->getFilename( $config->pathToFile ) );
 
-    if ( $c->param( 'code' ) ) ## postback from google 
+    if ( $c->param( 'code' ) )    ## postback from google
     {
       app->log->info( "Authorization code was retrieved: " . $c->param( 'code' ) );
       $tokens = $c->get_new_tokens( $c->param( 'code' ) );
       app->log->info( "App got new tokens: " . Dumper $tokens);
       if ( $tokens )
       {
-        
+
         if ( $tokens->{ id_token } )
         {
           # my $jwt = Mojo::JWT->new(claims => $tokens->{id_token});
@@ -223,10 +226,10 @@ sub runserver
           # carp "Decode header :".Dumper $header;
 
           $user_data = decode_jwt( token => $tokens->{ id_token }, kid_keys => $c->ua->get( 'https://www.googleapis.com/oauth2/v3/certs' )->res->json, );
+
           #carp "Decoded user data:" . Dumper $user_data;
         }
 
-        
 
         #$user_data->{email};
         #$user_data->{family_name}
@@ -238,22 +241,23 @@ sub runserver
         {
           $config->addToHash( 'gapi/tokens/' . $user_data->{ email }, 'refresh_token', $tokens->{ refresh_token } );
         }
-        else ## with access_type=offline set we should receive a refresh token unless user already has an active one.
+        else    ## with access_type=offline set we should receive a refresh token unless user already has an active one.
         {
           ## carp('Google JWT Did not incude a refresh token - when the access token expires services will become inaccessible');
         }
       }
+
       #$c->render( json => $config->get( 'gapi' ) );
       $c->{ access_token } = $tokens->{ access_token };
-      $c->{user_email} = $user_data->{email};
-      $c->render( template => 'oauth_granted');
+      $c->{ user_email }   = $user_data->{ email };
+      $c->render( template => 'oauth_granted' );
     }
-    else ## PRESENT USER DEFAULT PAGE TO REQUEST GOOGLE AUTH'D ACCESS TO SERVICES
+    else        ## PRESENT USER DEFAULT PAGE TO REQUEST GOOGLE AUTH'D ACCESS TO SERVICES
     {
       $c->render( template => 'oauth' );
     }
   };
-  app->secrets( ['putyourownsecretcookieseedhereforsecurity' . time] ); ## NB persistence cookies not required beyond server run
+  app->secrets( ['putyourownsecretcookieseedhereforsecurity' . time] );    ## NB persistence cookies not required beyond server run
   app->start( 'daemon', '-l', "http://*:$port" );
   return 1;
 }
@@ -273,7 +277,6 @@ sub _stdin
   chomp $string;
   return $string;
 }
-
 
 
 =head2 TODO: Improve user interface of the HTML templates beneath DATA section

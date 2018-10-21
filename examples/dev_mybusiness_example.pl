@@ -12,7 +12,6 @@ use strict;
 use warnings;
 
 
-
 =pod
 
                      },
@@ -97,59 +96,61 @@ As of writing this, the scopes are not defined in the discoverable resources and
 my $DEBUG = 1;
 
 
-      ##    BASIC CLIENT CONFIGURATION 
+##    BASIC CLIENT CONFIGURATION
 
-if ( -e './gapi.json')  { say "auth file exists" } else { croak('I only work if gapi.json is here'); }; ## prolly better to fail on setup ?
-my $gapi_agent = WebService::GoogleAPI::Client->new( debug => $DEBUG, gapi_json =>'./gapi.json'  );
+if   ( -e './gapi.json' ) { say "auth file exists" }
+else                      { croak( 'I only work if gapi.json is here' ); }
+;    ## prolly better to fail on setup ?
+my $gapi_agent        = WebService::GoogleAPI::Client->new( debug => $DEBUG, gapi_json => './gapi.json' );
 my $aref_token_emails = $gapi_agent->auth_storage->storage->get_token_emails_from_storage;
-my $user              = $aref_token_emails->[0]; ## default to the first user
+my $user              = $aref_token_emails->[0];                                                             ## default to the first user
 $gapi_agent->user( $user );
 
 say "Running tests with default user email = $user";
-say 'Root cache folder: ' .  $gapi_agent->discovery->chi->root_dir(); ## cached content temporary directory 
+say 'Root cache folder: ' . $gapi_agent->discovery->chi->root_dir();                                         ## cached content temporary directory
 
 my $api = 'mybusiness';
 
 
-if ( 1== 0 ) ## allows augment with Google My Business API Definition - as at 14th October 
+if ( 1 == 0 )    ## allows augment with Google My Business API Definition - as at 14th October
 {
   ## DISCOVERY SPECIFICATION - mostly internal - user shouldn't need to use this
-  say "keys of api discovery hashref = " . join(',', sort keys ( %{WebService::GoogleAPI::Client::Discovery->new->discover_all() }) );
+  say "keys of api discovery hashref = " . join( ',', sort keys( %{ WebService::GoogleAPI::Client::Discovery->new->discover_all() } ) );
+
   #my $discover_all = WebService::GoogleAPI::Client::Discovery->new->discover_all( 1  ); ## passing in a 1 forces a reload
 
   ## augment with the mybusiness structure
-$gapi_agent->discovery->augment_discover_all_with_unlisted_experimental_api( 
-                     {
-                       'version' => 'v4',
-                       'preferred' => 1,
-                       'title' => 'Google My Business API',
-                       'description' => 'The Google My Business API provides an interface for managing business location information on Google.',
-                       'id' => 'mybusiness:v4',
-                       'kind' => 'discovery#directoryItem',
-                       'documentationLink' => "https://developers.google.com/my-business/",
-                       'icons' => {
-                                  "x16"=> "http://www.google.com/images/icons/product/search-16.gif",
-                                  "x32"=> "http://www.google.com/images/icons/product/search-32.gif"
-                                },
-                       'discoveryRestUrl' => 'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
-                       'name' => 'mybusiness'
-                     }  );
+  $gapi_agent->discovery->augment_discover_all_with_unlisted_experimental_api( {
+    'version'           => 'v4',
+    'preferred'         => 1,
+    'title'             => 'Google My Business API',
+    'description'       => 'The Google My Business API provides an interface for managing business location information on Google.',
+    'id'                => 'mybusiness:v4',
+    'kind'              => 'discovery#directoryItem',
+    'documentationLink' => "https://developers.google.com/my-business/",
+    'icons'             => { "x16" => "http://www.google.com/images/icons/product/search-16.gif", "x32" => "http://www.google.com/images/icons/product/search-32.gif" },
+    'discoveryRestUrl'  => 'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
+    'name'              => 'mybusiness'
+  } );
 
   #my $discover_all = WebService::GoogleAPI::Client::Discovery->new->discover_all(  ); ## passing in a 1 forces a reload
-  my $discover_all = $gapi_agent->discover_all(  );
+  my $discover_all = $gapi_agent->discover_all();
+
   #exit;
-  print Dumper $discover_all ; 
-  for my $api ( @{ $discover_all->{items} } )
+  print Dumper $discover_all;
+  for my $api ( @{ $discover_all->{ items } } )
   {
-    if ( $api->{preferred} )
+    if ( $api->{ preferred } )
     {
       my $key = "$api->{name}/$api->{version}/rest";
+
       #print my $v1 = qq{$api->{preferred} $api->{name} $api->{version} https://www.googleapis.com/discovery/v1/apis/$key \n};
       say my $v2 = qq{$api->{preferred} $api->{name} $api->{version} $api->{discoveryRestUrl}};
     }
-    
+
     #WebService::GoogleAPI::Client::Discovery->new->get_rest({api});
   }
+
   #exit;
 }
 
@@ -157,26 +158,26 @@ if ( 1 == 1 )
 {
   my $api_spec = $gapi_agent->get_api_discovery_for_api_id( $api );
   ## keys = auth, basePath, baseUrl, batchPath, description, discoveryVersion, documentationLink, etag, icons, id, kind, name, ownerDomain, ownerName, parameters, protocol, resources, revision, rootUrl, schemas, servicePath, title, version
-  say join(', ', sort keys %{$api_spec} );
-  foreach my $k (qw/schemas resources auth /) { $api_spec->{$k} = 'removed to simplify';  } ## SIMPLIFY OUTPUT
+  say join( ', ', sort keys %{ $api_spec } );
+  foreach my $k ( qw/schemas resources auth / ) { $api_spec->{ $k } = 'removed to simplify'; }    ## SIMPLIFY OUTPUT
   say Dumper $api_spec;
 
   my $meths_by_id = $gapi_agent->methods_available_for_google_api_id( $api );
-  foreach my $meth ( keys %{$meths_by_id} )
+  foreach my $meth ( keys %{ $meths_by_id } )
   {
-    say "$meth"
+    say "$meth";
   }
-  
-   #say $gapi_agent->api_query( api_endpoint_id => 'sheets.spreadsheets.get', options=>{ spreadsheetId=> '14hc9iqhVVFMmvYi8-DZQ23GupqUZbR0SFtqiFwgkAuo' })->to_string;
-   #exit;
+
+  #say $gapi_agent->api_query( api_endpoint_id => 'sheets.spreadsheets.get', options=>{ spreadsheetId=> '14hc9iqhVVFMmvYi8-DZQ23GupqUZbR0SFtqiFwgkAuo' })->to_string;
+  #exit;
   # say $gapi_agent->api_query( api_endpoint_id => 'gmail.users.messages.list')->to_string;
-  foreach my $meth (qw/mybusiness.accounts.list  /) ##      -- FAILERS -  mybusiness.categories.list mybusiness.attributes.list
+  foreach my $meth ( qw/mybusiness.accounts.list  / )    ##      -- FAILERS -  mybusiness.categories.list mybusiness.attributes.list
   {
     say "Testing endpoint '$meth' with no additional options";
-    my $r = $gapi_agent->api_query( api_endpoint_id => $meth, options => {}, method=>'get');
+    my $r = $gapi_agent->api_query( api_endpoint_id => $meth, options => {}, method => 'get' );
     say $r->to_string;
     say '-----';
-    say $r->{body};
+    say $r->{ body };
     say '-----';
     say Dumper $r;
   }

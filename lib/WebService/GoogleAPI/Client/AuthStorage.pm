@@ -1,10 +1,11 @@
-use strictures; 
+use strictures;
+
 package WebService::GoogleAPI::Client::AuthStorage;
 
 # ABSTRACT: JSON File Persistence for Google OAUTH Project and User Access Tokens
 
 ## is client->auth_storage
-## or is Client->ua->auth_storage delegated as auth_storage to client 
+## or is Client->ua->auth_storage delegated as auth_storage to client
 
 ## or is UserAgent->credentials
 
@@ -15,8 +16,7 @@ use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
 
 
 has 'storage' => ( is => 'rw', default => sub { WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new } );    # by default
-has 'is_set'  => ( is => 'rw', default => 0 );
-
+has 'is_set' => ( is => 'rw', default => 0 );
 
 
 =method setup
