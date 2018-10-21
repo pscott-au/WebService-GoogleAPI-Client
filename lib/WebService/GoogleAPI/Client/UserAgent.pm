@@ -154,6 +154,9 @@ sub validated_api_query
 
   my $res = $self->start( $self->build_http_transaction( $params ) )->res;
   ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction
+  
+  ## TODO: 
+  return Mojo::Message::Response->new unless ref( $res ) eq 'Mojo::Message::Response';
 
   if ( ( $res->code == 401 ) && $self->do_autorefresh )
   {
