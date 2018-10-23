@@ -12,7 +12,7 @@ Access Google API Services Version 1 using an OAUTH2 User Agent
 
     ## assumes gapi.json configuration in working directory with scoped project and user authorization
     
-    my $gapi_client = WebService::GoogleAPI::Client->new( debug => 1, gapi_json => './gapi.json', user=> 'peter@pscott.com.au' );
+    my $gapi_client = WebService::GoogleAPI::Client->new( debug => 1, gapi_json => 'gapi.json', user=> 'peter@pscott.com.au' );
 
 =head2 AUTOMATIC API REQUEST CONSTRUCTION  - SEND EMAL
 

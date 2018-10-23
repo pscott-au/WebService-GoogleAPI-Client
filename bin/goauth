@@ -5,6 +5,20 @@ use warnings;    ## required because I can't work out how to get percritic to us
 
 package goauth;
 
+use Carp;
+use Mojolicious::Lite;
+use Data::Dumper;
+use Path::Class;
+use Config::JSON;
+use Tie::File;
+use feature 'say';
+use Net::EmptyPort qw(empty_port);
+
+use Crypt::JWT qw(decode_jwt);
+
+
+
+
 # ABSTRACT: CLI tool with mini http server for negotiating Google OAuth2 Authorisation access tokens that allow offline access to Google API Services on behalf of the user.
 
 =pod
@@ -67,31 +81,17 @@ This file can be used to access Google API Services using the WebService::Google
 
 =cut
 
-use strict;
-use warnings;
-use Carp;
-use Mojolicious::Lite;
-use Data::Dumper;
-use Config::JSON;
-use Tie::File;
-use feature 'say';
-use Net::EmptyPort qw(empty_port);
+#use Path::Class; # ::File; ## cros-platform file paths handling # Exports file() by default
 
-use Crypt::JWT qw(decode_jwt);
 
-my $filename;
-if ( $ARGV[0] )
-{
-  $filename = $ARGV[0];
-}
-else
-{
-  $filename = './gapi.json';
-}
 
-if ( -e $filename )
+
+my $filename = $ARGV[0] || 'gapi.json';
+my $file = file( $filename );
+
+if ( $file->stat() ) ## file exists
 {
-  say "File $filename exists";
+  say 'File ' , $file->absolute() .  ' exists';
   input_if_not_exists( ['gapi/client_id', 'gapi/client_secret', 'gapi/scopes'] );    ## this potentially allows mreging with a json file with data external
   ## to the app or to augment missing scope from file generated from
   ##  earlier versions of goauth from other libs
@@ -99,13 +99,15 @@ if ( -e $filename )
 }
 else
 {
-  say "JSON file '$filename' with OAUTH App Secrets and user tokens not found. Creating new file...";
+  
   setup();
   runserver();
 }
 
 sub setup
 {
+  say 'Project Credentials config file "' . $file->absolute() . '" with OAUTH App Secrets and user tokens not found. Creating new file...';
+
   ## TODO: consider allowing the gapi.json to be either seeded or to extend the credentials.json provided by Google
   my $oauth = {};
   say "Obtain project app client_id and client_secret from http://console.developers.google.com/";
@@ -218,23 +220,9 @@ sub runserver
 
         if ( $tokens->{ id_token } )
         {
-          # my $jwt = Mojo::JWT->new(claims => $tokens->{id_token});
-          # carp "Mojo header:".Dumper $jwt->header;
-
-          # my $keys = $c->get_all_google_jwk_keys(); # arrayref
-          # my ($header, $data) = decode_jwt( token => $tokens->{id_token}, decode_header => 1, key => '' ); # exctract kid
-          # carp "Decode header :".Dumper $header;
-
           $user_data = decode_jwt( token => $tokens->{ id_token }, kid_keys => $c->ua->get( 'https://www.googleapis.com/oauth2/v3/certs' )->res->json, );
-
-          #carp "Decoded user data:" . Dumper $user_data;
         }
 
-
-        #$user_data->{email};
-        #$user_data->{family_name}
-        #$user_data->{given_name}
-        # $tokensfile->set('tokens/'.$user_data->{email}, $tokens->{access_token});
         $config->addToHash( 'gapi/tokens/' . $user_data->{ email }, 'access_token', $tokens->{ access_token } );
 
         if ( $tokens->{ refresh_token } )

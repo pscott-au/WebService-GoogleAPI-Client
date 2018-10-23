@@ -9,7 +9,6 @@ package WebService::GoogleAPI::Client::AuthStorage;
 
 ## or is UserAgent->credentials
 
-use 5.014;
 use Moo;
 use Carp;
 use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
