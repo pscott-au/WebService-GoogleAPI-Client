@@ -14,7 +14,7 @@ SYNOPSIS
     
         ## assumes gapi.json configuration in working directory with scoped project and user authorization
         
-        my $gapi_client = WebService::GoogleAPI::Client->new( debug => 1, gapi_json => './gapi.json', user=> 'peter@pscott.com.au' );
+        my $gapi_client = WebService::GoogleAPI::Client->new( debug => 1, gapi_json => 'gapi.json', user=> 'peter@pscott.com.au' );
 
  AUTOMATIC API REQUEST CONSTRUCTION - SEND EMAL
 
