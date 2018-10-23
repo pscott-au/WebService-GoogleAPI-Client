@@ -238,21 +238,24 @@ sub discover_all
 Allows you to augment the cached stored version of the discovery structure
 
 augment_discover_all_with_unlisted_experimental_api( 
-                     {
-                       'version' => 'v4',
-                       'preferred' => 1,
-                       'title' => 'Google My Business API',
-                       'description' => 'The Google My Business API provides an interface for managing business location information on Google.',
-                       'id' => 'mybusiness:v4',
-                       'kind' => 'discovery#directoryItem',
-                       'documentationLink' => "https://developers.google.com/my-business/",
-                       'icons' => {
-                                  "x16": "http://www.google.com/images/icons/product/search-16.gif",
-                                  "x32": "http://www.google.com/images/icons/product/search-32.gif"
-                                },
-                       'discoveryRestUrl' => 'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
-                       'name' => 'mybusiness'
-                     }  );
+                            {
+                              'version' => 'v4',
+                              'preferred' => 1,
+                              'title' => 'Google My Business API',
+                              'description' => 'The Google My Business API
+provides an interface for managing business location information on
+Google.',
+                              'id' => 'mybusiness:v4',
+                              'kind' => 'discovery#directoryItem',
+                              'documentationLink' => "https://developers.google.com/my-business/",
+                              'icons' => {
+                                         "x16"=> "http://www.google.com/images/icons/product/search-16.gif",
+                                         "x32"=> "http://www.google.com/images/icons/product/search-32.gif"
+                                       },
+                              'discoveryRestUrl' =>
+       'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
+                              'name' => 'mybusiness'
+                            }   );
 
 if there is a conflict with the existing then warn and return the existing data without modification
 
@@ -284,12 +287,13 @@ sub augment_discover_all_with_unlisted_experimental_api
   ## warn and return existing data if entry appears to already exist
   foreach my $i ( @{ $all->{ items } } )
   {
+    $i->{ id } = '' unless defined $i->{ id };
     if ( ( $i->{ name } eq $api_spec->{ name } ) && ( $i->{ version } eq $api_spec->{ version } ) )
     {
       carp( "There is already an entry with name = $i->{name} and version = $i->{version} - no modifications saved" );
       return $all;
     }
-    if ( $i->{ id } eq $api_spec->{ id } )
+    if ( $i->{ id } eq $api_spec->{id} )
     {
       carp( "There is already an entry with id = $i->{id} - no modifications saved" );
       return $all;

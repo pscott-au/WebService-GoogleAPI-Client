@@ -44,10 +44,41 @@ ok( my $disc = WebService::GoogleAPI::Client::Discovery->new( chi=>$chi, debug=>
  
 ok( my $gmail_api_spec = $disc->methods_available_for_google_api_id('gmail', 'v1'), 'Get available methods for Gmail V1');
  
-# print Dumper $gmail_api_spec;
 
-#my $gmail_api_spec = $disc->methods_available_for_google_api_id('blogger');
-#print Dumper $disc->{stats};
+ok ( $disc->augment_discover_all_with_unlisted_experimental_api(
+                            {
+                              'version' => 'v4',
+                              'preferred' => 1,
+                              'title' => 'Google My Business API',
+                              'description' => 'The Google My Business API
+       provides an interface for managing business location information on
+       Google.',
+                              'id' => 'mybusiness:v4',
+                              'kind' => 'discovery#directoryItem',
+                              'documentationLink' =>
+       "https://developers.google.com/my-business/",
+                              'icons' => {
+                                         "x16"=>
+       "http://www.google.com/images/icons/product/search-16.gif",
+                                         "x32"=>
+       "http://www.google.com/images/icons/product/search-32.gif"
+                                       },
+                              'discoveryRestUrl' =>
+       'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
+                              'name' => 'mybusiness'
+                            }  ), 'Augment discovery all with experimental specification'  );
+
+
+
+
+ok ( $disc->available_APIs(), 'Get available APIs');
+ok ( $disc->supported_as_text(), 'Supported as text');
+ok ( $disc->available_versions('gmail'), 'Available versions for Gmail');
+ok ( $disc->latest_stable_version('gmail'), 'Latest stable version for Gmail');
+ok( $disc->api_verson_urls(), 'api version urls');
+ok( $disc->methods_available_for_google_api_id('gmail'), 'Get end points available for gmail');
+ok( $disc->list_of_available_google_api_ids(), 'All available Google API IDs');
+
 note( ' CHI TYPE + ' .  ref( $disc->chi() ) );
 #note( my$y = $x->get('https://www.googleapis.com/discovery/v1/apis'));
 #print Dumper $x;
