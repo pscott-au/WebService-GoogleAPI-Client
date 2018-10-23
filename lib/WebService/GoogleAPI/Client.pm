@@ -4,6 +4,14 @@ package WebService::GoogleAPI::Client;
 
 # ABSTRACT: Google API Services Client.
 
+
+#   FROM MCE POD -- <p><img src="https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.png" width="664" height="446" alt="Bank Queuing Model" /></p>
+
+=for html
+<a href="https://travis-ci.org/pscott-au//WebService-GoogleAPI-Client"><img alt="Build Status" src="https://api.travis-ci.org/pscott-au/WebService-GoogleAPI-Client.png?branch=master" /></a>
+<a href="https://metacpan.org/pod/WebService::GoogleAPI::Client"><img alt="CPAN version" src="https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.png" /></a>
+
+
 =head1 SYNOPSIS
 
 Access Google API Services Version 1 using an OAUTH2 User Agent

@@ -37,10 +37,30 @@ use Data::Dumper;
 use CHI;    # Caching .. NB Consider reviewing https://metacpan.org/pod/Mojo::UserAgent::Role::Cache
 
 
+## NB - I am not familiar with this moosey approach to OO so there may be obvious errors - keep an eye on this.
+
 has 'ua' => ( is => 'rw', default => sub { WebService::GoogleAPI::Client::UserAgent->new }, lazy => 1 );    ## typically shared with parent instance of Client which sets on new
 has 'debug' => ( is => 'rw', default => 0, lazy => 1 );
-has 'chi' => ( is => 'rw', default => sub { CHI->new( driver => 'File', namespace => __PACKAGE__ ) }, lazy => 1 );
+has 'chi' => ( is => 'rw', default => sub { CHI->new( driver => 'File', namespace => __PACKAGE__ ) }, lazy => 1 ); ## i believe that this gives priority to param if provided ?
 
+
+my $stats = {
+  network => {
+    # last request timestamp
+    # last request response_code 
+    # last request response_code_count
+    # total bytes sent
+    # total bytes received
+  },
+  cache => {
+    count => 0,
+    # last request timestamp
+    # last request response_code 
+    # last request response_code_count
+    # total bytes sent
+    # total bytes received
+  }
+};
 =head1 METHODS
 
 
@@ -104,6 +124,7 @@ sub get_api_discovery_for_api_id
   if ( my $dat = $self->chi->get( $api_discovery_uri ) )    ## clobbers some of the attempted thinking further on .. just return it for now if it's there
   {
     #carp Dumper $dat;
+    $self->{stats}{cache}{get}++;
     return $dat;
   }
 
@@ -127,6 +148,7 @@ sub get_api_discovery_for_api_id
 
       #carp("dat1 = " . Dumper $dat);
       $self->chi->set( $api_discovery_uri, $dat, '30 days' );
+      $self->{stats}{network}{get}++;
       return $dat;
 
       #my $ret_data = $self->chi->get( $api_discovery_uri );
@@ -185,6 +207,7 @@ sub discover_all
     carp "discovery_data cached data expires in ", scalar( $expires_at ) - time(), " seconds\n" if ( $self->debug > 2 );
     my $ret = $self->chi->get( 'https://www.googleapis.com/discovery/v1/apis' );
     croak( 'CHI Discovery should be a hash - got something other' ) unless ref( $ret ) eq 'HASH';
+    $self->{stats}{cache}{get}++;
     return $ret;
   }
   else    ##
@@ -196,6 +219,7 @@ sub discover_all
     if ( $ret->is_success )
     {
       my $all = $ret->json;
+      $self->{stats}{network}{get}++;
       $self->chi->set( 'https://www.googleapis.com/discovery/v1/apis', $all, '30d' );
       return $self->chi->get( 'https://www.googleapis.com/discovery/v1/apis' );
     }
@@ -244,7 +268,7 @@ sub augment_discover_all_with_unlisted_experimental_api
 
   my $all = $self->discover_all();
 
-#warn Dumper $all;
+  #warn Dumper $all;
   ## fail if any of the expected fields are not provided
   foreach my $field ( qw/version title description id kind documentationLink discoveryRestUrl name/ )    ## icons preferred
   {
@@ -589,3 +613,6 @@ sub list_of_available_google_api_ids
 
 
 1;
+
+## TODO - CODE REVIEW
+## get_expires_at .. deos this do what is expected ? - what if has expired and so get fails - will this still return a value?

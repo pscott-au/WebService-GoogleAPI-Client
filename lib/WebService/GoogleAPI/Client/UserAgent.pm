@@ -20,6 +20,9 @@ has 'debug'                         => ( is => 'rw', default => 0 );
 has 'credentials' =>
   ( is => 'rw', default => sub { WebService::GoogleAPI::Client::Credentials->instance }, handles => [qw/access_token auth_storage get_scopes_as_array user /], lazy => 1 );
 
+## NB - could cache using https://metacpan.org/pod/Mojo::UserAgent::Cached TODO: Review source of this for ideas 
+
+
 ## NB - used by both Client and Discovery
 
 # Keep access_token in headers always actual
@@ -30,6 +33,7 @@ sub BUILD
   ## performance tip as per https://developers.google.com/calendar/performance and similar links
   ## NB - to work with Google APIs also assumes that Accept-Encoding: gzip is set in HTTP headers
   $self->transactor->name( __PACKAGE__ . ' (gzip enabled)' );
+  ## MAX SIZE ETC _ WHAT OTHER CONFIGURABLE PARAMS ARE AVAILABLE
 }
 
 
