@@ -11,7 +11,7 @@ WebService::GoogleAPI::Client - Perl Google API Services OAUTH Client.
 
 # VERSION
 
-version 0.12
+version 0.13
 
 # SYNOPSIS
 
@@ -148,24 +148,15 @@ The code in this repository uses [Dist::Zilla](http://dzil.org/) Build System to
     sudo dzil install
 ````
 
-## Install from Tarball
-
-````
-    
-    wget https://dev.pscott.com.au/WebService-Google-Client-latest.tar.gz
-    tar -zxvf WebService-Google-Client-latest.tar.gz
-    rm WebService-Google-Client-latest.tar.gz
-    cd   WebService-Google-Client-*
-    perl Makefile.PL
-    make test
-    sudo make install
-
-    
-````
-
 ## Install from CPAN
 
   sudo cpanm WebService::GoogleAPI::Client
+
+### Windows Strawberry Perl Notes
+
+At the time of writing I had issues installing [Config::Json V1.5202](https://metacpan.org/pod/Config::JSON) due to [an issue with the tests](https://github.com/plainblack/config-json/issues/5). Until [the patch](https://github.com/plainblack/config-json/pull/4) is applied it is OK to force the install in cpan to get things working. 
+
+I was unable to get the [Dist::Zilla](https://metacpan.org/pod/Dist::Zilla) packages installed under Windows but installing without the dzil build layer through _cpanm_ or _cpan_ should now work as of V0.13
 
 
 ## TYPICAL USAGE QUICKSTART
@@ -176,11 +167,14 @@ The code in this repository uses [Dist::Zilla](http://dzil.org/) Build System to
 * Requires a local project configuration file that can be generated with the included *goauth* CLI Tool (perldoc goauth for more detail )
 
 ````perl
+    use strict;
+    use warnings;
+    ue Data::Dumper;
+
     use feature 'say';
     use WebService::GoogleAPI::Client;
 
     my $gapi = WebService::GoogleAPI::Client->new(debug => 0);
-    $gapi->auth_storage->setup( { type => 'jsonfile', path => './gapi.json' } );
 
     ## This idiom selects the first authorised user from gapi.json 
     my $aref_token_emails = $gapi->auth_storage->storage->get_token_emails_from_storage;

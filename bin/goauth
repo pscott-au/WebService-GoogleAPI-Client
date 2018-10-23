@@ -133,16 +133,16 @@ sub setup
       . 'https://www.googleapis.com/auth/contacts.readonly https://mail.google.com';
   }
 
-  my $tokensfile = Config::JSON->create( $filename );
+  my $tokensfile = Config::JSON->create( $file->absolute() );
   $tokensfile->set( 'gapi/client_id',     $oauth->{ client_id } );
   $tokensfile->set( 'gapi/client_secret', $oauth->{ client_secret } );
   $tokensfile->set( 'gapi/scopes',        $oauth->{ scopes } );
   say 'OAuth details  updated!';
 
   # Remove comment for Mojolicious::Plugin::JSONConfig compatibility
-  tie my @array, 'Tie::File', $filename or croak $!;
-  shift @array;
-  untie @array;
+  #tie my @array, 'Tie::File', $file->absolute() or croak $!;
+  #shift @array;
+  #untie @array;
   return 1;
 }
 
@@ -168,7 +168,7 @@ sub runserver
 {
   my $port = empty_port( 3000 );
   say "Starting web server. Before authorization don't forget to allow redirect_uri to http://127.0.0.1 in your Google Console Project";
-  $ENV{ 'GOAUTH_TOKENSFILE' } = $filename;
+  $ENV{ 'GOAUTH_TOKENSFILE' } = $file->absolute();
 
   my $config = Config::JSON->new( $ENV{ 'GOAUTH_TOKENSFILE' } );
 
