@@ -60,38 +60,33 @@ my $gapi_agent = WebService::GoogleAPI::Client->new( debug => 1, chi => $chi, ga
 ## AVAILABLE API IDS
 if ( 1 == 0 )
 {
-  my @apis = WebService::GoogleAPI::Client->new->list_of_available_google_api_ids();
+  my @apis = $gapi_agent>list_of_available_google_api_ids();
   say "AVAILABLE GOOGLE SERVICE IDs = " . join( ", ", @apis );
   say "Total count = " . scalar( @apis );
   exit;
 }
 
 
-my $blogger_api = WebService::GoogleAPI::Client->new->methods_available_for_google_api_id( 'blogger' );
+my $blogger_api = $gapi_agent->methods_available_for_google_api_id( 'blogger' );
 
 #say "Available api end-points for gmail = \n\t" . join("\n\t", keys %$blogger_api);
 say "Available api end-points for blogger = \n\t" . join( ",", keys %$blogger_api ) . "\n\n";
 say "blogger includes a total of " . scalar( keys %$blogger_api ) . ' methods';
 
-#say Dumper $gapi_agent->discovery->get_api_discovery_for_api_id( 'blogger.blogs.listByUser') ;
 say '-' x 50;
 say "blogger.blogs.listByUser";
 say '-' x 50;
 p( %{ $gapi_agent->extract_method_discovery_detail_from_api_spec( 'blogger.blogs.listByUser') } );
-exit;
-
-
 my $r =   $gapi_agent->api_query( 
                             api_endpoint_id => 'blogger.blogs.listByUser',
                             options    => { userId => 'self' },
                         );
+p(  %{$r->json->{items}[0]} );
+
 
 #print Dumper $r;
 #
 #print PPO( $r->json->{items}[0] );
-
-
-p(  %{$r->json->{items}[0]} );
 
 
 # blogger.blogs.listByUser

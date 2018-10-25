@@ -1,8 +1,9 @@
 use strictures;
+use 5.14;
 
 package WebService::GoogleAPI::Client;
 
-# ABSTRACT: Google API Services Client.
+# ABSTRACT: API WebService OAUTH2 Client Agent to streamline access to GOOGLE API End-Point Services using Discovery Data
 
 
 #   FROM MCE POD -- <p><img src="https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.png" width="664" height="446" alt="Bank Queuing Model" /></p>
@@ -16,11 +17,27 @@ package WebService::GoogleAPI::Client;
 
 Access Google API Services Version 1 using an OAUTH2 User Agent
 
-    use WebService::GoogleAPI::Client;
+assumes gapi.json configuration in working directory with scoped Google project 
+redentials and user authorization created by _goauth_
 
-    ## assumes gapi.json configuration in working directory with scoped project and user authorization
+    use WebService::GoogleAPI::Client;
     
     my $gapi_client = WebService::GoogleAPI::Client->new( debug => 1, gapi_json => 'gapi.json', user=> 'peter@pscott.com.au' );
+    
+    say $gapi_client->list_of_available_google_api_ids();
+
+    my @gmail_endpoint_list =      $gapi_client->methods_available_for_google_api_id('gmail')
+
+    if $gapi_agent->has_scope_to_access_api_endpoint( 'gmail.users.settings.sendAs.get' ) {
+      say 'User has Access to GMail Method End-Point gmail.users.settings.sendAs.get';
+    }
+
+    
+
+
+Package includes _go_auth_ CLI Script to collect initial end-user authorisation to scoped services
+
+=head1 EXAMPLES
 
 =head2 AUTOMATIC API REQUEST CONSTRUCTION  - SEND EMAL
 
@@ -85,6 +102,8 @@ has 'discovery' => (
 
 ## provides a way of augmenting constructor (new) without overloading it
 ##  see https://metacpan.org/pod/distribution/Moose/lib/Moose/Manual/Construction.pod if like me you an new to Moose
+
+=head1 METHODS
 
 =head2 C<new>
 
@@ -323,7 +342,7 @@ sub api_query
         }
 
         ## something not quite right here - commenting out for review TODO: REVIEW
-#push (@teapot_errors, qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_discovery_struct->{ownerName} $api_discovery_struct->{canonicalName} $api_discovery_struct->{version} with id $method_discovery_struct->{id} as described by discovery document version $method_discovery_struct->{discoveryVersion} revision $method_discovery_struct->{revision} with documentation at $api_discovery_struct->{documentationLink} \nDescription $api_discovery_struct->{description}\n} );
+        #push (@teapot_errors, qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_discovery_struct->{ownerName} $api_discovery_struct->{canonicalName} $api_discovery_struct->{version} with id $method_discovery_struct->{id} as described by discovery document version $method_discovery_struct->{discoveryVersion} revision $method_discovery_struct->{revision} with documentation at $api_discovery_struct->{documentationLink} \nDescription $api_discovery_struct->{description}\n} );
       }
 
     }
@@ -363,6 +382,9 @@ sub api_query
 =head2 C<has_scope_to_access_api_endpoint>
 
 Given an API Endpoint such as 'gmail.users.settings.sendAs.get' returns 1 iff user has scope to access
+
+
+    say 'User has Access'  if $gapi_agent->has_scope_to_access_api_endpoint( 'gmail.users.settings.sendAs.get' );
 
 Returns 0 if scope to access is not available to the user.
 
@@ -410,7 +432,7 @@ Returns a hashref keyed on the Google service API Endpoint in dotted format.
 The hashed content contains a structure
 representing the corresponding discovery specification for that method ( API Endpoint )
 
-    methods_available_for_google_api_id('gmail.users.settings.delegates.get')
+    methods_available_for_google_api_id('gmail')
 
 TODO: consider ? refactor to allow parameters either as a single api id such as 'gmail' 
       as well as the currently accepted  hash keyed on the api and version
