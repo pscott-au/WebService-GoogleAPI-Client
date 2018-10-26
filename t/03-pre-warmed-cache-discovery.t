@@ -17,6 +17,7 @@ use Data::Dumper;    ## remove this when finish tweaking
 use Cwd;
 use CHI;
 use WebService::GoogleAPI::Client;
+use Sub::Override;
 #use WebService::GoogleAPI::Client::Discovery;
 use JSON;
 #use lib './lib'; ## provides pre-populated values 
@@ -25,25 +26,59 @@ use JSON;
 my $dir   = getcwd;
 my $DEBUG = 1;        ## to see noise of class debugging
 my $warm_hash = {}; 
-$warm_hash->{'https://www.googleapis.com/discovery/v1/apis'} = 'foo';
+#$warm_hash->{'https://www.googleapis.com/discovery/v1/apis'} = 'foo';
 #print Dumper $hash;
 
 
 my $chi = CHI->new(driver => 'RawMemory', datastore => $warm_hash ); 
 
-$chi->set('https://www.googleapis.com/discovery/v1/apis'               => from_json( pre_get_all_apis_json())  );
-$chi->set('https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest' => from_json(pre_get_gmail_spec_json()) );
+#$chi->set('https://www.googleapis.com/discovery/v1/apis'               => from_json( pre_get_all_apis_json())  );
+#$chi->set('https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest' => from_json(pre_get_gmail_spec_json()) );
 use_ok( 'WebService::GoogleAPI::Client::Discovery' );
 
 #my $disc = WebService::GoogleAPI::Client::Discovery->new(   );
 
 ok( my $disc = WebService::GoogleAPI::Client::Discovery->new( chi=>$chi, debug=>$DEBUG  ) ,'Create a new discovery instance with pre-cached data');
- #$disc->discovery->chi( $chi );
- #$disc->chi( $chi );
- #my $all_apis = $disc->discover_all() ;
+
+    ## INJECT HTTP RESPONSE FOR API DISCOVERY REQUEST
+    my $override = Sub::Override->new('Mojo::Transaction::res', sub {
+        my $res =  Mojo::Message::Response->new ;
+        $res->code( 200 );
+        $res->body(  pre_get_all_apis_json() );
+        return $res;
+        });
+    
+    ok( my $all = $disc->discover_all(), 'discover_all()' );
+
+    ## INJECT HTTP RESPONSE FOR GAMIL V1 API SPECIFICATION
+    my $override2 = Sub::Override->new('Mojo::Transaction::res', 
+                                sub {
+                                        my $res2 =  Mojo::Message::Response->new ;
+                                        $res2->code( 200 );
+                                        $res2->body( pre_get_gmail_spec_json() );
+                                        return $res2;
+                                    });
+
+
+    ok( my $gmail_api_spec = $disc->methods_available_for_google_api_id('gmail', 'v1'), 'Get available methods for Gmail V1');
  
-ok( my $gmail_api_spec = $disc->methods_available_for_google_api_id('gmail', 'v1'), 'Get available methods for Gmail V1');
- 
+
+    
+    my $override3 = Sub::Override->new('Mojo::Transaction::res', 
+        sub {
+              my $res2 =  Mojo::Message::Response->new ;
+              $res2->code( 200 );
+              $res2->body( "TESTED FINE" );
+              return $res2;
+              });
+
+
+    #my $gapi_client = WebService::GoogleAPI::Client->new( debug => 0, gapi_json => 'gapi.json', chi => $chi  );
+    #ok( my $cl = $gapi_client->api_query( api_endpoint_id => 'gmail.users.messages.list'  ), 'api_query - "gmail.users.messages.list"');
+    
+
+    
+
 
 ok ( $disc->augment_discover_all_with_unlisted_experimental_api(
                             {
