@@ -22,7 +22,7 @@ nytprof.out
 *.bs
 /_eumm/
 /.idea/
-gapi.json
+/gapi.json
 examples/*.json
 examples/*.png
 **/delme*

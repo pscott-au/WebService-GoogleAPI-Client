@@ -3,7 +3,7 @@
 =head2 USAGE
 
 To run manually in the local directory assuming gapi.json present in source root and in xt/author/calendar directory
-  C<prove -I../lib 03-pre-warmed-cache-discovery.t -w -o -v>
+  C<prove -I../lib 04-client-mocked-agent.t -w -o -v>
 
 NB: is also run as part of dzil test
 
@@ -18,10 +18,10 @@ use Cwd;
 use CHI;
 use WebService::GoogleAPI::Client;
 use Sub::Override;
-#use WebService::GoogleAPI::Client::Discovery;
 use JSON;
-#use lib './lib'; ## provides pre-populated values 
-#use CHI::Driver::TEST_MOCKED;
+use FindBin qw/$Bin/;
+use Sub::Override;
+
 
 my $dir   = getcwd;
 my $DEBUG = 1;        ## to see noise of class debugging
@@ -36,9 +36,13 @@ my $chi = CHI->new(driver => 'RawMemory', datastore => $warm_hash );
 #$chi->set('https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest' => from_json(pre_get_gmail_spec_json()) );
 use_ok( 'WebService::GoogleAPI::Client::Discovery' );
 
-#my $disc = WebService::GoogleAPI::Client::Discovery->new(   );
+#my $client = WebService::GoogleAPI::Client::Discovery->new(   );
 
-ok( my $disc = WebService::GoogleAPI::Client::Discovery->new( chi=>$chi, debug=>$DEBUG  ) ,'Create a new discovery instance to use mocked agent responses');
+ok( my $client = WebService::GoogleAPI::Client->new( gapi_json => "$Bin/gapi.json", chi=>$chi, debug=>$DEBUG  ) ,'Create a new Client instance');
+
+my $aref_token_emails = $client->auth_storage->storage->get_token_emails_from_storage;
+my $user              = $aref_token_emails->[0];                                                             ## default to the first user
+$client->user( $user );
 
     ## INJECT HTTP RESPONSE FOR API DISCOVERY REQUEST
     my $override = Sub::Override->new('Mojo::Transaction::res', sub {
@@ -48,7 +52,7 @@ ok( my $disc = WebService::GoogleAPI::Client::Discovery->new( chi=>$chi, debug=>
         return $res;
         });
     
-    ok( my $all = $disc->discover_all(), 'discover_all()' );
+    ok( my $all = $client->discover_all(), 'discover_all()' );
 
     ## INJECT HTTP RESPONSE FOR GAMIL V1 API SPECIFICATION
     my $override2 = Sub::Override->new('Mojo::Transaction::res', 
@@ -60,7 +64,7 @@ ok( my $disc = WebService::GoogleAPI::Client::Discovery->new( chi=>$chi, debug=>
                                     });
 
 
-    ok( my $gmail_api_spec = $disc->methods_available_for_google_api_id('gmail', 'v1'), 'Get available methods for Gmail V1');
+    ok( my $gmail_api_spec = $client->methods_available_for_google_api_id('gmail', 'v1'), 'Get available methods for Gmail V1');
  
 
     
@@ -73,48 +77,20 @@ ok( my $disc = WebService::GoogleAPI::Client::Discovery->new( chi=>$chi, debug=>
               });
 
 
-    #my $gapi_client = WebService::GoogleAPI::Client->new( debug => 0, gapi_json => 'gapi.json', chi => $chi  );
-    #ok( my $cl = $gapi_client->api_query( api_endpoint_id => 'gmail.users.messages.list'  ), 'api_query - "gmail.users.messages.list"');
-    
-
+    ok( my $cl = $client->api_query( api_endpoint_id => 'gmail.users.messages.list'  ), 'api_query - "gmail.users.messages.list"');
     
 
 
-ok ( $disc->augment_discover_all_with_unlisted_experimental_api(
-                            {
-                              'version' => 'v4',
-                              'preferred' => 1,
-                              'title' => 'Google My Business API',
-                              'description' => 'The Google My Business API
-       provides an interface for managing business location information on
-       Google.',
-                              'id' => 'mybusiness:v4',
-                              'kind' => 'discovery#directoryItem',
-                              'documentationLink' =>
-       "https://developers.google.com/my-business/",
-                              'icons' => {
-                                         "x16"=>
-       "http://www.google.com/images/icons/product/search-16.gif",
-                                         "x32"=>
-       "http://www.google.com/images/icons/product/search-32.gif"
-                                       },
-                              'discoveryRestUrl' =>
-       'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
-                              'name' => 'mybusiness'
-                            }  ), 'Augment discovery all with experimental specification'  );
 
-
-
-
-ok ( $disc->available_APIs(), 'Get available APIs');
-ok ( $disc->supported_as_text(), 'Supported as text');
-ok ( $disc->available_versions('gmail'), 'Available versions for Gmail');
-ok ( $disc->latest_stable_version('gmail'), 'Latest stable version for Gmail');
-ok( $disc->api_verson_urls(), 'api version urls');
-ok( $disc->methods_available_for_google_api_id('gmail'), 'Get end points available for gmail');
-ok( $disc->list_of_available_google_api_ids(), 'All available Google API IDs');
-
-note( ' CHI TYPE + ' .  ref( $disc->chi() ) );
+#ok ( $client->available_APIs(), 'Get available APIs');
+#ok ( $client->supported_as_text(), 'Supported as text');
+#ok ( $client->available_versions('gmail'), 'Available versions for Gmail');
+#ok ( $client->latest_stable_version('gmail'), 'Latest stable version for Gmail');
+#ok( $client->api_verson_urls(), 'api version urls');
+ok( $client->methods_available_for_google_api_id('gmail'), 'Get end points available for gmail');
+ok( $client->list_of_available_google_api_ids(), 'All available Google API IDs');
+ok( $client->has_scope_to_access_api_endpoint('gmail.users.settings.sendAs.get'),'has GMail scope');
+note( ' CHI TYPE + ' .  ref( $client->chi() ) );
 #note( my$y = $x->get('https://www.googleapis.com/discovery/v1/apis'));
 #print Dumper $x;
 
@@ -142,7 +118,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Abusive Experience Report API",
    "description": "Views Abusive Experience Report data, and gets a list of sites that have a significant number of abusive experiences.",
-   "discoveryRestUrl": "https://abusiveexperiencereport.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://abusiveexperiencereport.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -157,7 +133,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Accelerated Mobile Pages (AMP) URL API",
    "description": "This API contains a single method, batchGet. Call this method to retrieve the AMP URL (and equivalent AMP Cache URL) for given public URL(s).",
-   "discoveryRestUrl": "https://acceleratedmobilepageurl.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://acceleratedmobilepageurl.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -172,7 +148,7 @@ sub pre_get_all_apis_json
    "version": "v1beta",
    "title": "Access Context Manager API",
    "description": "An API for setting attribute based access control to requests to GCP services.",
-   "discoveryRestUrl": "https://accesscontextmanager.googleapis.com/$discovery/rest?version=v1beta",
+   "discoveryRestUrl": "https://accesscontextmanager.googleapis.com/$clientovery/rest?version=v1beta",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -235,7 +211,7 @@ sub pre_get_all_apis_json
    "version": "v2beta1",
    "title": "Ad Exchange Buyer API II",
    "description": "Accesses the latest features for managing Ad Exchange accounts, Real-Time Bidding configurations and auction metrics, and Marketplace programmatic deals.",
-   "discoveryRestUrl": "https://adexchangebuyer.googleapis.com/$discovery/rest?version=v2beta1",
+   "discoveryRestUrl": "https://adexchangebuyer.googleapis.com/$clientovery/rest?version=v2beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -250,7 +226,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Ad Experience Report API",
    "description": "Views Ad Experience Report data, and gets a list of sites that have a significant number of annoying ads.",
-   "discoveryRestUrl": "https://adexperiencereport.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://adexperiencereport.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -348,7 +324,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "G Suite Alert Center API",
    "description": "G Suite Alert Center API to view and manage alerts on issues affecting your domain.",
-   "discoveryRestUrl": "https://alertcenter.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://alertcenter.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -395,7 +371,7 @@ sub pre_get_all_apis_json
    "version": "v4",
    "title": "Google Analytics Reporting API",
    "description": "Accesses Analytics report data.",
-   "discoveryRestUrl": "https://analyticsreporting.googleapis.com/$discovery/rest?version=v4",
+   "discoveryRestUrl": "https://analyticsreporting.googleapis.com/$clientovery/rest?version=v4",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -410,7 +386,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Android Device Provisioning Partner API",
    "description": "Automates Android zero-touch enrollment for device resellers, customers, and EMMs.",
-   "discoveryRestUrl": "https://androiddeviceprovisioning.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://androiddeviceprovisioning.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -441,7 +417,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Android Management API",
    "description": "The Android Management API provides remote enterprise management of Android devices and apps.",
-   "discoveryRestUrl": "https://androidmanagement.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://androidmanagement.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -520,7 +496,7 @@ sub pre_get_all_apis_json
    "version": "v1alpha",
    "title": "App Engine Admin API",
    "description": "Provisions and manages developers' App Engine applications.",
-   "discoveryRestUrl": "https://appengine.googleapis.com/$discovery/rest?version=v1alpha",
+   "discoveryRestUrl": "https://appengine.googleapis.com/$clientovery/rest?version=v1alpha",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -535,7 +511,7 @@ sub pre_get_all_apis_json
    "version": "v1beta",
    "title": "App Engine Admin API",
    "description": "Provisions and manages developers' App Engine applications.",
-   "discoveryRestUrl": "https://appengine.googleapis.com/$discovery/rest?version=v1beta",
+   "discoveryRestUrl": "https://appengine.googleapis.com/$clientovery/rest?version=v1beta",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -550,7 +526,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "App Engine Admin API",
    "description": "Provisions and manages developers' App Engine applications.",
-   "discoveryRestUrl": "https://appengine.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://appengine.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -565,7 +541,7 @@ sub pre_get_all_apis_json
    "version": "v1beta4",
    "title": "App Engine Admin API",
    "description": "Provisions and manages developers' App Engine applications.",
-   "discoveryRestUrl": "https://appengine.googleapis.com/$discovery/rest?version=v1beta4",
+   "discoveryRestUrl": "https://appengine.googleapis.com/$clientovery/rest?version=v1beta4",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -580,7 +556,7 @@ sub pre_get_all_apis_json
    "version": "v1beta5",
    "title": "App Engine Admin API",
    "description": "Provisions and manages developers' App Engine applications.",
-   "discoveryRestUrl": "https://appengine.googleapis.com/$discovery/rest?version=v1beta5",
+   "discoveryRestUrl": "https://appengine.googleapis.com/$clientovery/rest?version=v1beta5",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -643,7 +619,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "BigQuery Data Transfer API",
    "description": "Transfers data from partner SaaS applications to Google BigQuery on a scheduled, managed basis.",
-   "discoveryRestUrl": "https://bigquerydatatransfer.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://bigquerydatatransfer.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -658,7 +634,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Binary Authorization API",
    "description": "The management interface for Binary Authorization, a system providing policy control for images deployed to Kubernetes Engine clusters.",
-   "discoveryRestUrl": "https://binaryauthorization.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://binaryauthorization.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -743,7 +719,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Hangouts Chat API",
    "description": "Create bots and extend the new Hangouts Chat.",
-   "discoveryRestUrl": "https://chat.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://chat.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -774,7 +750,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Google Classroom API",
    "description": "Manages classes, rosters, and invitations in Google Classroom.",
-   "discoveryRestUrl": "https://classroom.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://classroom.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -789,7 +765,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Asset API",
    "description": "The cloud asset API manages the history and inventory of cloud resources.",
-   "discoveryRestUrl": "https://cloudasset.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://cloudasset.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -804,7 +780,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Billing API",
    "description": "Allows developers to manage billing for their Google Cloud Platform projects programmatically.",
-   "discoveryRestUrl": "https://cloudbilling.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudbilling.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -819,7 +795,7 @@ sub pre_get_all_apis_json
    "version": "v1alpha1",
    "title": "Cloud Build API",
    "description": "Creates and manages builds on Google Cloud Platform.",
-   "discoveryRestUrl": "https://cloudbuild.googleapis.com/$discovery/rest?version=v1alpha1",
+   "discoveryRestUrl": "https://cloudbuild.googleapis.com/$clientovery/rest?version=v1alpha1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -834,7 +810,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Build API",
    "description": "Creates and manages builds on Google Cloud Platform.",
-   "discoveryRestUrl": "https://cloudbuild.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudbuild.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -849,7 +825,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Stackdriver Debugger API",
    "description": "Examines the call stack and variables of a running application without stopping or slowing it down.",
-   "discoveryRestUrl": "https://clouddebugger.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://clouddebugger.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -864,7 +840,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Stackdriver Error Reporting API",
    "description": "Groups and counts similar errors from cloud services and applications, reports new errors, and provides access to error groups and their associated errors.",
-   "discoveryRestUrl": "https://clouderrorreporting.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://clouderrorreporting.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -879,7 +855,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Functions API",
    "description": "Manages lightweight user-provided functions executed in response to events.",
-   "discoveryRestUrl": "https://cloudfunctions.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudfunctions.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -894,7 +870,7 @@ sub pre_get_all_apis_json
    "version": "v1beta2",
    "title": "Cloud Functions API",
    "description": "Manages lightweight user-provided functions executed in response to events.",
-   "discoveryRestUrl": "https://cloudfunctions.googleapis.com/$discovery/rest?version=v1beta2",
+   "discoveryRestUrl": "https://cloudfunctions.googleapis.com/$clientovery/rest?version=v1beta2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -909,7 +885,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud IoT API",
    "description": "Registers and manages IoT (Internet of Things) devices that connect to the Google Cloud Platform.",
-   "discoveryRestUrl": "https://cloudiot.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudiot.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -924,7 +900,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud IoT API",
    "description": "Registers and manages IoT (Internet of Things) devices that connect to the Google Cloud Platform.",
-   "discoveryRestUrl": "https://cloudiot.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://cloudiot.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -939,7 +915,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Key Management Service (KMS) API",
    "description": "Manages keys and performs cryptographic operations in a central cloud service, for direct use by other cloud resources and applications.",
-   "discoveryRestUrl": "https://cloudkms.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudkms.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -954,7 +930,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Stackdriver Profiler API",
    "description": "Manages continuous profiling information.",
-   "discoveryRestUrl": "https://cloudprofiler.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://cloudprofiler.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -969,7 +945,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Resource Manager API",
    "description": "The Google Cloud Resource Manager API provides methods for creating, reading, and updating project metadata.",
-   "discoveryRestUrl": "https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudresourcemanager.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -984,7 +960,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Resource Manager API",
    "description": "The Google Cloud Resource Manager API provides methods for creating, reading, and updating project metadata.",
-   "discoveryRestUrl": "https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://cloudresourcemanager.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -999,7 +975,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Cloud Resource Manager API",
    "description": "The Google Cloud Resource Manager API provides methods for creating, reading, and updating project metadata.",
-   "discoveryRestUrl": "https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://cloudresourcemanager.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1014,7 +990,7 @@ sub pre_get_all_apis_json
    "version": "v2beta1",
    "title": "Cloud Resource Manager API",
    "description": "The Google Cloud Resource Manager API provides methods for creating, reading, and updating project metadata.",
-   "discoveryRestUrl": "https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v2beta1",
+   "discoveryRestUrl": "https://cloudresourcemanager.googleapis.com/$clientovery/rest?version=v2beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1029,7 +1005,7 @@ sub pre_get_all_apis_json
    "version": "v1alpha1",
    "title": "Cloud Shell API",
    "description": "Allows users to start, configure, and connect to interactive shell sessions running in the cloud.",
-   "discoveryRestUrl": "https://cloudshell.googleapis.com/$discovery/rest?version=v1alpha1",
+   "discoveryRestUrl": "https://cloudshell.googleapis.com/$clientovery/rest?version=v1alpha1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1044,7 +1020,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Shell API",
    "description": "Allows users to start, configure, and connect to interactive shell sessions running in the cloud.",
-   "discoveryRestUrl": "https://cloudshell.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudshell.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1059,7 +1035,7 @@ sub pre_get_all_apis_json
    "version": "v2beta2",
    "title": "Cloud Tasks API",
    "description": "Manages the execution of large numbers of distributed requests.",
-   "discoveryRestUrl": "https://cloudtasks.googleapis.com/$discovery/rest?version=v2beta2",
+   "discoveryRestUrl": "https://cloudtasks.googleapis.com/$clientovery/rest?version=v2beta2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1074,7 +1050,7 @@ sub pre_get_all_apis_json
    "version": "v2beta3",
    "title": "Cloud Tasks API",
    "description": "Manages the execution of large numbers of distributed requests.",
-   "discoveryRestUrl": "https://cloudtasks.googleapis.com/$discovery/rest?version=v2beta3",
+   "discoveryRestUrl": "https://cloudtasks.googleapis.com/$clientovery/rest?version=v2beta3",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1089,7 +1065,7 @@ sub pre_get_all_apis_json
    "version": "v2alpha1",
    "title": "Stackdriver Trace API",
    "description": "Sends application trace data to Stackdriver Trace for viewing. Trace data is collected for all App Engine applications by default. Trace data from other applications can be provided using this API. This library is used to interact with the Trace API directly. If you are looking to instrument your application for Stackdriver Trace, we recommend using OpenCensus.",
-   "discoveryRestUrl": "https://cloudtrace.googleapis.com/$discovery/rest?version=v2alpha1",
+   "discoveryRestUrl": "https://cloudtrace.googleapis.com/$clientovery/rest?version=v2alpha1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1104,7 +1080,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Stackdriver Trace API",
    "description": "Sends application trace data to Stackdriver Trace for viewing. Trace data is collected for all App Engine applications by default. Trace data from other applications can be provided using this API. This library is used to interact with the Trace API directly. If you are looking to instrument your application for Stackdriver Trace, we recommend using OpenCensus.",
-   "discoveryRestUrl": "https://cloudtrace.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudtrace.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1119,7 +1095,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Stackdriver Trace API",
    "description": "Sends application trace data to Stackdriver Trace for viewing. Trace data is collected for all App Engine applications by default. Trace data from other applications can be provided using this API. This library is used to interact with the Trace API directly. If you are looking to instrument your application for Stackdriver Trace, we recommend using OpenCensus.",
-   "discoveryRestUrl": "https://cloudtrace.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://cloudtrace.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1134,7 +1110,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Composer API",
    "description": "Manages Apache Airflow environments on Google Cloud Platform.",
-   "discoveryRestUrl": "https://composer.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://composer.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1149,7 +1125,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Composer API",
    "description": "Manages Apache Airflow environments on Google Cloud Platform.",
-   "discoveryRestUrl": "https://composer.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://composer.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1212,7 +1188,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Kubernetes Engine API",
    "description": "The Google Kubernetes Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
-   "discoveryRestUrl": "https://container.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://container.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1227,7 +1203,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Kubernetes Engine API",
    "description": "The Google Kubernetes Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
-   "discoveryRestUrl": "https://container.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://container.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1274,7 +1250,7 @@ sub pre_get_all_apis_json
    "version": "v1b3",
    "title": "Dataflow API",
    "description": "Manages Google Cloud Dataflow projects on Google Cloud Platform.",
-   "discoveryRestUrl": "https://dataflow.googleapis.com/$discovery/rest?version=v1b3",
+   "discoveryRestUrl": "https://dataflow.googleapis.com/$clientovery/rest?version=v1b3",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1289,7 +1265,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Dataproc API",
    "description": "Manages Hadoop-based clusters and jobs on Google Cloud Platform.",
-   "discoveryRestUrl": "https://dataproc.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://dataproc.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1304,7 +1280,7 @@ sub pre_get_all_apis_json
    "version": "v1beta2",
    "title": "Cloud Dataproc API",
    "description": "Manages Hadoop-based clusters and jobs on Google Cloud Platform.",
-   "discoveryRestUrl": "https://dataproc.googleapis.com/$discovery/rest?version=v1beta2",
+   "discoveryRestUrl": "https://dataproc.googleapis.com/$clientovery/rest?version=v1beta2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1319,7 +1295,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Datastore API",
    "description": "Accesses the schemaless NoSQL database to provide fully managed, robust, scalable storage for your application.",
-   "discoveryRestUrl": "https://datastore.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://datastore.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1334,7 +1310,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Datastore API",
    "description": "Accesses the schemaless NoSQL database to provide fully managed, robust, scalable storage for your application.",
-   "discoveryRestUrl": "https://datastore.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://datastore.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1349,7 +1325,7 @@ sub pre_get_all_apis_json
    "version": "v1beta3",
    "title": "Cloud Datastore API",
    "description": "Accesses the schemaless NoSQL database to provide fully managed, robust, scalable storage for your application.",
-   "discoveryRestUrl": "https://datastore.googleapis.com/$discovery/rest?version=v1beta3",
+   "discoveryRestUrl": "https://datastore.googleapis.com/$clientovery/rest?version=v1beta3",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1476,7 +1452,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Dialogflow API",
    "description": "Builds conversational interfaces (for example, chatbots, and voice-powered apps and devices).",
-   "discoveryRestUrl": "https://dialogflow.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://dialogflow.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1491,7 +1467,7 @@ sub pre_get_all_apis_json
    "version": "v2beta1",
    "title": "Dialogflow API",
    "description": "Builds conversational interfaces (for example, chatbots, and voice-powered apps and devices).",
-   "discoveryRestUrl": "https://dialogflow.googleapis.com/$discovery/rest?version=v2beta1",
+   "discoveryRestUrl": "https://dialogflow.googleapis.com/$clientovery/rest?version=v2beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1506,7 +1482,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Digital Asset Links API",
    "description": "Discovers relationships between online assets such as websites or mobile apps.",
-   "discoveryRestUrl": "https://digitalassetlinks.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://digitalassetlinks.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1537,7 +1513,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Cloud Data Loss Prevention (DLP) API",
    "description": "Provides methods for detection, risk analysis, and de-identification of privacy-sensitive fragments in text, images, and Google Cloud Platform storage repositories.",
-   "discoveryRestUrl": "https://dlp.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://dlp.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1667,7 +1643,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Filestore API",
    "description": "The Cloud Filestore API is used for creating and managing cloud file servers.",
-   "discoveryRestUrl": "https://file.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://file.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1682,7 +1658,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Firebase Dynamic Links API",
    "description": "Programmatically creates and manages Firebase Dynamic Links.",
-   "discoveryRestUrl": "https://firebasedynamiclinks.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://firebasedynamiclinks.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1697,7 +1673,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Firebase Hosting API",
    "description": "",
-   "discoveryRestUrl": "https://firebasehosting.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://firebasehosting.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1712,7 +1688,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Firebase Rules API",
    "description": "Creates and manages rules that determine when a Firebase Rules-enabled service should permit a request.",
-   "discoveryRestUrl": "https://firebaserules.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://firebaserules.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1727,7 +1703,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Firestore API",
    "description": "Accesses the NoSQL document database built for automatic scaling, high performance, and ease of application development.",
-   "discoveryRestUrl": "https://firestore.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://firestore.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1742,7 +1718,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Firestore API",
    "description": "Accesses the NoSQL document database built for automatic scaling, high performance, and ease of application development.",
-   "discoveryRestUrl": "https://firestore.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://firestore.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1757,7 +1733,7 @@ sub pre_get_all_apis_json
    "version": "v1beta2",
    "title": "Cloud Firestore API",
    "description": "Accesses the NoSQL document database built for automatic scaling, high performance, and ease of application development.",
-   "discoveryRestUrl": "https://firestore.googleapis.com/$discovery/rest?version=v1beta2",
+   "discoveryRestUrl": "https://firestore.googleapis.com/$clientovery/rest?version=v1beta2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1868,7 +1844,7 @@ sub pre_get_all_apis_json
    "version": "v1alpha2",
    "title": "Genomics API",
    "description": "Uploads, processes, queries, and searches Genomics data in the cloud.",
-   "discoveryRestUrl": "https://genomics.googleapis.com/$discovery/rest?version=v1alpha2",
+   "discoveryRestUrl": "https://genomics.googleapis.com/$clientovery/rest?version=v1alpha2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1883,7 +1859,7 @@ sub pre_get_all_apis_json
    "version": "v2alpha1",
    "title": "Genomics API",
    "description": "Uploads, processes, queries, and searches Genomics data in the cloud.",
-   "discoveryRestUrl": "https://genomics.googleapis.com/$discovery/rest?version=v2alpha1",
+   "discoveryRestUrl": "https://genomics.googleapis.com/$clientovery/rest?version=v2alpha1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1898,7 +1874,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Genomics API",
    "description": "Uploads, processes, queries, and searches Genomics data in the cloud.",
-   "discoveryRestUrl": "https://genomics.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://genomics.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1961,7 +1937,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Identity and Access Management (IAM) API",
    "description": "Manages identity and access control for Google Cloud Platform resources, including the creation of service accounts, which you can use to authenticate to Google and make API calls.",
-   "discoveryRestUrl": "https://iam.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://iam.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1976,7 +1952,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "IAM Service Account Credentials API",
    "description": "Creates short-lived, limited-privilege credentials for IAM service accounts.",
-   "discoveryRestUrl": "https://iamcredentials.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://iamcredentials.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -1991,7 +1967,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Identity-Aware Proxy API",
    "description": "Controls access to cloud applications running on Google Cloud Platform.",
-   "discoveryRestUrl": "https://iap.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://iap.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2022,7 +1998,7 @@ sub pre_get_all_apis_json
    "version": "v3",
    "title": "Indexing API",
    "description": "Notifies Google when your web pages change.",
-   "discoveryRestUrl": "https://indexing.googleapis.com/$discovery/rest?version=v3",
+   "discoveryRestUrl": "https://indexing.googleapis.com/$clientovery/rest?version=v3",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2037,7 +2013,7 @@ sub pre_get_all_apis_json
    "version": "v3p1beta1",
    "title": "Cloud Talent Solution API",
    "description": "Cloud Talent Solution provides the capability to create, read, update, and delete job postings, as well as search jobs based on keywords and filters.",
-   "discoveryRestUrl": "https://jobs.googleapis.com/$discovery/rest?version=v3p1beta1",
+   "discoveryRestUrl": "https://jobs.googleapis.com/$clientovery/rest?version=v3p1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2052,7 +2028,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Cloud Talent Solution API",
    "description": "Cloud Talent Solution provides the capability to create, read, update, and delete job postings, as well as search jobs based on keywords and filters.",
-   "discoveryRestUrl": "https://jobs.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://jobs.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2067,7 +2043,7 @@ sub pre_get_all_apis_json
    "version": "v3",
    "title": "Cloud Talent Solution API",
    "description": "Cloud Talent Solution provides the capability to create, read, update, and delete job postings, as well as search jobs based on keywords and filters.",
-   "discoveryRestUrl": "https://jobs.googleapis.com/$discovery/rest?version=v3",
+   "discoveryRestUrl": "https://jobs.googleapis.com/$clientovery/rest?version=v3",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2082,7 +2058,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Knowledge Graph Search API",
    "description": "Searches the Google Knowledge Graph for entities.",
-   "discoveryRestUrl": "https://kgsearch.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://kgsearch.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2097,7 +2073,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Natural Language API",
    "description": "Provides natural language understanding technologies to developers. Examples include sentiment analysis, entity recognition, entity sentiment analysis, and text annotations.",
-   "discoveryRestUrl": "https://language.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://language.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2112,7 +2088,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Natural Language API",
    "description": "Provides natural language understanding technologies to developers. Examples include sentiment analysis, entity recognition, entity sentiment analysis, and text annotations.",
-   "discoveryRestUrl": "https://language.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://language.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2127,7 +2103,7 @@ sub pre_get_all_apis_json
    "version": "v1beta2",
    "title": "Cloud Natural Language API",
    "description": "Provides natural language understanding technologies to developers. Examples include sentiment analysis, entity recognition, entity sentiment analysis, and text annotations.",
-   "discoveryRestUrl": "https://language.googleapis.com/$discovery/rest?version=v1beta2",
+   "discoveryRestUrl": "https://language.googleapis.com/$clientovery/rest?version=v1beta2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2158,7 +2134,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Stackdriver Logging API",
    "description": "Writes log entries and manages your Logging configuration.",
-   "discoveryRestUrl": "https://logging.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://logging.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2173,7 +2149,7 @@ sub pre_get_all_apis_json
    "version": "v2beta1",
    "title": "Stackdriver Logging API",
    "description": "Writes log entries and manages your Logging configuration.",
-   "discoveryRestUrl": "https://logging.googleapis.com/$discovery/rest?version=v2beta1",
+   "discoveryRestUrl": "https://logging.googleapis.com/$clientovery/rest?version=v2beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2188,7 +2164,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Manufacturer Center API",
    "description": "Public API for managing Manufacturer Center related data.",
-   "discoveryRestUrl": "https://manufacturers.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://manufacturers.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2222,7 +2198,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Machine Learning Engine",
    "description": "An API to enable creating and using machine learning models.",
-   "discoveryRestUrl": "https://ml.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://ml.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2237,7 +2213,7 @@ sub pre_get_all_apis_json
    "version": "v3",
    "title": "Stackdriver Monitoring API",
    "description": "Manages your Stackdriver Monitoring data and configurations. Most projects must be associated with a Stackdriver account, with a few exceptions as noted on the individual method pages.",
-   "discoveryRestUrl": "https://monitoring.googleapis.com/$discovery/rest?version=v3",
+   "discoveryRestUrl": "https://monitoring.googleapis.com/$clientovery/rest?version=v3",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2284,7 +2260,7 @@ sub pre_get_all_apis_json
    "version": "v1alpha",
    "title": "Cloud OS Login API",
    "description": "Manages OS login configuration for Google account users.",
-   "discoveryRestUrl": "https://oslogin.googleapis.com/$discovery/rest?version=v1alpha",
+   "discoveryRestUrl": "https://oslogin.googleapis.com/$clientovery/rest?version=v1alpha",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2299,7 +2275,7 @@ sub pre_get_all_apis_json
    "version": "v1beta",
    "title": "Cloud OS Login API",
    "description": "Manages OS login configuration for Google account users.",
-   "discoveryRestUrl": "https://oslogin.googleapis.com/$discovery/rest?version=v1beta",
+   "discoveryRestUrl": "https://oslogin.googleapis.com/$clientovery/rest?version=v1beta",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2314,7 +2290,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud OS Login API",
    "description": "Manages OS login configuration for Google account users.",
-   "discoveryRestUrl": "https://oslogin.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://oslogin.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2377,7 +2353,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Google Partners API",
    "description": "Searches certified companies and creates contact leads with them, and also audits the usage of clients.",
-   "discoveryRestUrl": "https://partners.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://partners.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2392,7 +2368,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "People API",
    "description": "Provides access to information about profiles and contacts.",
-   "discoveryRestUrl": "https://people.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://people.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2455,7 +2431,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Poly API",
    "description": "The Poly API provides read access to assets hosted on poly.google.com to all, and upload access to poly.google.com for whitelisted accounts.",
-   "discoveryRestUrl": "https://poly.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://poly.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2470,7 +2446,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Proximity Beacon API",
    "description": "Registers, manages, indexes, and searches beacons.",
-   "discoveryRestUrl": "https://proximitybeacon.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://proximitybeacon.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2485,7 +2461,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1a",
    "title": "Cloud Pub/Sub API",
    "description": "Provides reliable, many-to-many, asynchronous messaging between applications.",
-   "discoveryRestUrl": "https://pubsub.googleapis.com/$discovery/rest?version=v1beta1a",
+   "discoveryRestUrl": "https://pubsub.googleapis.com/$clientovery/rest?version=v1beta1a",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2500,7 +2476,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Pub/Sub API",
    "description": "Provides reliable, many-to-many, asynchronous messaging between applications.",
-   "discoveryRestUrl": "https://pubsub.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://pubsub.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2515,7 +2491,7 @@ sub pre_get_all_apis_json
    "version": "v1beta2",
    "title": "Cloud Pub/Sub API",
    "description": "Provides reliable, many-to-many, asynchronous messaging between applications.",
-   "discoveryRestUrl": "https://pubsub.googleapis.com/$discovery/rest?version=v1beta2",
+   "discoveryRestUrl": "https://pubsub.googleapis.com/$clientovery/rest?version=v1beta2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2530,7 +2506,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Google Cloud Memorystore for Redis API",
    "description": "The Google Cloud Memorystore for Redis API is used for creating and managing Redis instances on the Google Cloud Platform.",
-   "discoveryRestUrl": "https://redis.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://redis.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2545,7 +2521,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Google Cloud Memorystore for Redis API",
    "description": "The Google Cloud Memorystore for Redis API is used for creating and managing Redis instances on the Google Cloud Platform.",
-   "discoveryRestUrl": "https://redis.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://redis.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2617,7 +2593,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Runtime Configuration API",
    "description": "The Runtime Configurator allows you to dynamically configure and expose variables through Google Cloud Platform. In addition, you can also set Watchers and Waiters that will watch for changes to your data and return based on certain conditions.",
-   "discoveryRestUrl": "https://runtimeconfig.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://runtimeconfig.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2632,7 +2608,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Runtime Configuration API",
    "description": "The Runtime Configurator allows you to dynamically configure and expose variables through Google Cloud Platform. In addition, you can also set Watchers and Waiters that will watch for changes to your data and return based on certain conditions.",
-   "discoveryRestUrl": "https://runtimeconfig.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://runtimeconfig.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2647,7 +2623,7 @@ sub pre_get_all_apis_json
    "version": "v4",
    "title": "Safe Browsing API",
    "description": "Enables client applications to check web resources (most commonly URLs) against Google-generated lists of unsafe web resources.",
-   "discoveryRestUrl": "https://safebrowsing.googleapis.com/$discovery/rest?version=v4",
+   "discoveryRestUrl": "https://safebrowsing.googleapis.com/$clientovery/rest?version=v4",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2662,7 +2638,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Apps Script API",
    "description": "Manages and executes Google Apps Script projects.",
-   "discoveryRestUrl": "https://script.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://script.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2677,7 +2653,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Google Search Console URL Testing Tools API",
    "description": "Provides tools for running validation tests against single URLs",
-   "discoveryRestUrl": "https://searchconsole.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://searchconsole.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2692,7 +2668,7 @@ sub pre_get_all_apis_json
    "version": "v1alpha1",
    "title": "Service Broker API",
    "description": "The Google Cloud Platform Service Broker API provides Google hosted implementation of the Open Service Broker API (https://www.openservicebrokerapi.org/).",
-   "discoveryRestUrl": "https://servicebroker.googleapis.com/$discovery/rest?version=v1alpha1",
+   "discoveryRestUrl": "https://servicebroker.googleapis.com/$clientovery/rest?version=v1alpha1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2707,7 +2683,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Service Broker API",
    "description": "The Google Cloud Platform Service Broker API provides Google hosted implementation of the Open Service Broker API (https://www.openservicebrokerapi.org/).",
-   "discoveryRestUrl": "https://servicebroker.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://servicebroker.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2722,7 +2698,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Service Broker API",
    "description": "The Google Cloud Platform Service Broker API provides Google hosted implementation of the Open Service Broker API (https://www.openservicebrokerapi.org/).",
-   "discoveryRestUrl": "https://servicebroker.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://servicebroker.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2737,7 +2713,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Service Consumer Management API",
    "description": "Manages the service consumers of a Service Infrastructure service.",
-   "discoveryRestUrl": "https://serviceconsumermanagement.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://serviceconsumermanagement.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2752,7 +2728,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Service Control API",
    "description": "Provides control plane functionality to managed services, such as logging, monitoring, and status checks.",
-   "discoveryRestUrl": "https://servicecontrol.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://servicecontrol.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2767,7 +2743,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Service Management API",
    "description": "Google Service Management allows service producers to publish their services on Google Cloud Platform so that they can be discovered and used by service consumers.",
-   "discoveryRestUrl": "https://servicemanagement.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://servicemanagement.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2782,7 +2758,7 @@ sub pre_get_all_apis_json
    "version": "v1beta",
    "title": "Service Networking API",
    "description": "Provides automatic management of network configurations necessary for certain services.",
-   "discoveryRestUrl": "https://servicenetworking.googleapis.com/$discovery/rest?version=v1beta",
+   "discoveryRestUrl": "https://servicenetworking.googleapis.com/$clientovery/rest?version=v1beta",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2797,7 +2773,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Service Usage API",
    "description": "Enables services that service consumers want to use on Google Cloud Platform, lists the available or enabled services, or disables services that service consumers no longer use.",
-   "discoveryRestUrl": "https://serviceusage.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://serviceusage.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2812,7 +2788,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Service Usage API",
    "description": "Enables services that service consumers want to use on Google Cloud Platform, lists the available or enabled services, or disables services that service consumers no longer use.",
-   "discoveryRestUrl": "https://serviceusage.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://serviceusage.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2827,7 +2803,7 @@ sub pre_get_all_apis_json
    "version": "v4",
    "title": "Google Sheets API",
    "description": "Reads and writes Google Sheets.",
-   "discoveryRestUrl": "https://sheets.googleapis.com/$discovery/rest?version=v4",
+   "discoveryRestUrl": "https://sheets.googleapis.com/$clientovery/rest?version=v4",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2858,7 +2834,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Google Slides API",
    "description": "An API for creating and editing Google Slides presentations.",
-   "discoveryRestUrl": "https://slides.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://slides.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2873,7 +2849,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Source Repositories API",
    "description": "Access source code repositories hosted by Google.",
-   "discoveryRestUrl": "https://sourcerepo.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://sourcerepo.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2888,7 +2864,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Spanner API",
    "description": "Cloud Spanner is a managed, mission-critical, globally consistent and scalable relational database service.",
-   "discoveryRestUrl": "https://spanner.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://spanner.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2903,7 +2879,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Speech API",
    "description": "Converts audio to text by applying powerful neural network models.",
-   "discoveryRestUrl": "https://speech.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://speech.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2918,7 +2894,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Speech API",
    "description": "Converts audio to text by applying powerful neural network models.",
-   "discoveryRestUrl": "https://speech.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://speech.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3006,7 +2982,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Storage Transfer API",
    "description": "Transfers data from external data sources to a Google Cloud Storage bucket or between Google Cloud Storage buckets.",
-   "discoveryRestUrl": "https://storagetransfer.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://storagetransfer.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3021,7 +2997,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Street View Publish API",
    "description": "Publishes 360 photos to Google Maps, along with position, orientation, and connectivity metadata. Apps can offer an interface for positioning, connecting, and uploading user-generated Street View images.",
-   "discoveryRestUrl": "https://streetviewpublish.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://streetviewpublish.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3099,7 +3075,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Testing API",
    "description": "Allows developers to run automated tests for their mobile applications on Google infrastructure.",
-   "discoveryRestUrl": "https://testing.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://testing.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3114,7 +3090,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Text-to-Speech API",
    "description": "Synthesizes natural-sounding speech by applying powerful neural network models.",
-   "discoveryRestUrl": "https://texttospeech.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://texttospeech.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3129,7 +3105,7 @@ sub pre_get_all_apis_json
    "version": "v1beta1",
    "title": "Cloud Text-to-Speech API",
    "description": "Synthesizes natural-sounding speech by applying powerful neural network models.",
-   "discoveryRestUrl": "https://texttospeech.googleapis.com/$discovery/rest?version=v1beta1",
+   "discoveryRestUrl": "https://texttospeech.googleapis.com/$clientovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3160,7 +3136,7 @@ sub pre_get_all_apis_json
    "version": "v1alpha1",
    "title": "Cloud TPU API",
    "description": "TPU API provides customers with access to Google TPU technology.",
-   "discoveryRestUrl": "https://tpu.googleapis.com/$discovery/rest?version=v1alpha1",
+   "discoveryRestUrl": "https://tpu.googleapis.com/$clientovery/rest?version=v1alpha1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3175,7 +3151,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud TPU API",
    "description": "TPU API provides customers with access to Google TPU technology.",
-   "discoveryRestUrl": "https://tpu.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://tpu.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3190,7 +3166,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "Cloud Translation API",
    "description": "Integrates text translation into your website or application.",
-   "discoveryRestUrl": "https://translation.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://translation.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3221,7 +3197,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "G Suite Vault API",
    "description": "Archiving and eDiscovery for G Suite.",
-   "discoveryRestUrl": "https://vault.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://vault.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3236,7 +3212,7 @@ sub pre_get_all_apis_json
    "version": "v1p1beta1",
    "title": "Cloud Video Intelligence API",
    "description": "Cloud Video Intelligence API.",
-   "discoveryRestUrl": "https://videointelligence.googleapis.com/$discovery/rest?version=v1p1beta1",
+   "discoveryRestUrl": "https://videointelligence.googleapis.com/$clientovery/rest?version=v1p1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3251,7 +3227,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Video Intelligence API",
    "description": "Cloud Video Intelligence API.",
-   "discoveryRestUrl": "https://videointelligence.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://videointelligence.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3266,7 +3242,7 @@ sub pre_get_all_apis_json
    "version": "v1beta2",
    "title": "Cloud Video Intelligence API",
    "description": "Cloud Video Intelligence API.",
-   "discoveryRestUrl": "https://videointelligence.googleapis.com/$discovery/rest?version=v1beta2",
+   "discoveryRestUrl": "https://videointelligence.googleapis.com/$clientovery/rest?version=v1beta2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3281,7 +3257,7 @@ sub pre_get_all_apis_json
    "version": "v1p1beta1",
    "title": "Cloud Vision API",
    "description": "Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications.",
-   "discoveryRestUrl": "https://vision.googleapis.com/$discovery/rest?version=v1p1beta1",
+   "discoveryRestUrl": "https://vision.googleapis.com/$clientovery/rest?version=v1p1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3296,7 +3272,7 @@ sub pre_get_all_apis_json
    "version": "v1p2beta1",
    "title": "Cloud Vision API",
    "description": "Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications.",
-   "discoveryRestUrl": "https://vision.googleapis.com/$discovery/rest?version=v1p2beta1",
+   "discoveryRestUrl": "https://vision.googleapis.com/$clientovery/rest?version=v1p2beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3311,7 +3287,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "Cloud Vision API",
    "description": "Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications.",
-   "discoveryRestUrl": "https://vision.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://vision.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3358,7 +3334,7 @@ sub pre_get_all_apis_json
    "version": "v1alpha",
    "title": "Web Security Scanner API",
    "description": "Web Security Scanner API (under development).",
-   "discoveryRestUrl": "https://websecurityscanner.googleapis.com/$discovery/rest?version=v1alpha",
+   "discoveryRestUrl": "https://websecurityscanner.googleapis.com/$clientovery/rest?version=v1alpha",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3373,7 +3349,7 @@ sub pre_get_all_apis_json
    "version": "v1beta",
    "title": "Web Security Scanner API",
    "description": "Web Security Scanner API (under development).",
-   "discoveryRestUrl": "https://websecurityscanner.googleapis.com/$discovery/rest?version=v1beta",
+   "discoveryRestUrl": "https://websecurityscanner.googleapis.com/$clientovery/rest?version=v1beta",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3439,7 +3415,7 @@ sub pre_get_all_apis_json
    "version": "v2",
    "title": "YouTube Analytics API",
    "description": "Retrieves your YouTube Analytics data.",
-   "discoveryRestUrl": "https://youtubeanalytics.googleapis.com/$discovery/rest?version=v2",
+   "discoveryRestUrl": "https://youtubeanalytics.googleapis.com/$clientovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -3454,7 +3430,7 @@ sub pre_get_all_apis_json
    "version": "v1",
    "title": "YouTube Reporting API",
    "description": "Schedules reporting jobs containing your YouTube Analytics data and downloads the resulting bulk data reports in the form of CSV files.",
-   "discoveryRestUrl": "https://youtubereporting.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://youtubereporting.googleapis.com/$clientovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
