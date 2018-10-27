@@ -82,7 +82,10 @@ $client->user( $user );
     ok ( $client->ua->header_with_bearer_auth_token(), 'header_with_bearer_auth_token' );
     ok( my $cred      = $client->ua->auth_storage->get_credentials_for_refresh( $user ), 'get credentials'); 
     ok(  my $new_token = $client->ua->refresh_access_token( $cred ), 'refresh token' );
-
+    ok( $client->debug(1), 'set debug');
+    ok( $client->do_autorefresh(1), 'set debug');
+    ok( $client->ua->debug(1), 'set debug');
+    
 #ok ( $client->available_APIs(), 'Get available APIs');
 #ok ( $client->supported_as_text(), 'Supported as text');
 #ok ( $client->available_versions('gmail'), 'Available versions for Gmail');
