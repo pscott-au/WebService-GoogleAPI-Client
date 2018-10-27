@@ -32,6 +32,11 @@ See also alternative using gcloud as described at https://cloud.google.com/text-
 
 first param required, second param of filename optional
 
+=head2 TODO
+
+* more optional parameters 
+* Selectable voices - https://cloud.google.com/text-to-speech/docs/voices 
+
 =cut
 
 my $params = {};

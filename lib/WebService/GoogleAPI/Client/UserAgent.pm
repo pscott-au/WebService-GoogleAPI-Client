@@ -7,6 +7,7 @@ package WebService::GoogleAPI::Client::UserAgent;
 use Moo;
 
 extends 'Mojo::UserAgent';
+#extends 'Mojo::UserAgent::Mockable';
 use WebService::GoogleAPI::Client::Credentials;
 use WebService::GoogleAPI::Client::AuthStorage;
 use Mojo::UserAgent;
@@ -33,7 +34,7 @@ sub BUILD
   ## performance tip as per https://developers.google.com/calendar/performance and similar links
   ## NB - to work with Google APIs also assumes that Accept-Encoding: gzip is set in HTTP headers
   $self->transactor->name( __PACKAGE__ . ' (gzip enabled)' );
-  ## MAX SIZE ETC _ WHAT OTHER CONFIGURABLE PARAMS ARE AVAILABLE
+    ## MAX SIZE ETC _ WHAT OTHER CONFIGURABLE PARAMS ARE AVAILABLE
 }
 
 
@@ -151,16 +152,17 @@ sub validated_api_query
 
   if ( ref( $params ) eq '' )    ## assume is a GET for the URI at $params
   {
-    carp( "transcribing $params to a hashref for validated_api_query" );
+    carp( "transcribing $params to a hashref for validated_api_query" ) if $self->debug;
     my $val = $params;
     $params = { path => $val, method => 'get', options => {}, };
   }
 
   my $res = $self->start( $self->build_http_transaction( $params ) )->res;
+  
   ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction
   
   ## TODO: 
-  return Mojo::Message::Response->new unless ref( $res ) eq 'Mojo::Message::Response';
+#  return Mojo::Message::Response->new unless ref( $res ) eq 'Mojo::Message::Response';
 
   if ( ( $res->code == 401 ) && $self->do_autorefresh )
   {
