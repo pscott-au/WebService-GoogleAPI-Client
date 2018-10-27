@@ -1,182 +1,330 @@
-<html>
-<head>
-<title>WebService::GoogleAPI::Client - By Peter Scott </title>
-<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-<link rel="icon" href="/favicon.ico" type="image/x-icon">
-<style>
-body{
-  margin: 0px; 
-}
+<!doctype html>
+<!--
+  Material Design Lite
+  Copyright 2015 Google Inc. All rights reserved.
 
-.circle {
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  font-size: 18px;
-  color: #fff;
-  line-height: 500px;
-  text-align: center;
-  background: #009688;
-  font-family: "Lato","Helvetica Neue",Helvetica,Arial,sans-serif;
-  padding: 20px;
-}
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="A perl SDK for integration to Google API Services.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>Perl WebService::GoogleAPI::Client</title>
+
+    <!-- Add to homescreen for Chrome on Android -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" sizes="192x192" href="images/android-desktop.png">
+
+    <!-- Add to homescreen for Safari on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Material Design Lite">
+    <link rel="apple-touch-icon-precomposed" href="images/ios-desktop.png">
+
+    <!-- Tile icon for Win8 (144x144 + tile color) -->
+    <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
+    <meta name="msapplication-TileColor" content="#3372DF">
+
+    <link rel="shortcut icon" href="images/favicon.png">
+
+    <!-- SEO: If your mobile URL is different from the desktop URL, add a canonical link to the desktop page https://developers.google.com/webmasters/smartphone-sites/feature-phones -->
+    <!--
+    <link rel="canonical" href="http://www.example.com/">
+    -->
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.deep_purple-pink.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+    #view-source {
+      position: fixed;
+      display: block;
+      right: 0;
+      bottom: 0;
+      margin-right: 40px;
+      margin-bottom: 40px;
+      z-index: 900;
+    }
+    </style>
+  </head>
+  <body class="mdl-demo mdl-color--grey-100 mdl-color-text--grey-700 mdl-base">
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+      <header class="mdl-layout__header mdl-layout__header--scroll mdl-color--primary">
+        <div class="mdl-layout--large-screen-only mdl-layout__header-row">
+        </div>
+        <div class="mdl-layout--large-screen-only mdl-layout__header-row">
+
+          <h3>The Perl library for accessing Google APIs. (Still Alpha)</h3>
+          
+
+        </div>
+        <div class="mdl-layout--large-screen-only mdl-layout__header-row">
+            
+        </div>
+        <div class="mdl-layout__tab-bar mdl-js-ripple-effect mdl-color--primary-dark">
+          <a href="#overview" class="mdl-layout__tab is-active">Home</a>
+          <a href="#features" class="mdl-layout__tab">Guides</a>
+          <a href="#features" class="mdl-layout__tab">Reference</a>
+          <a href="#features" class="mdl-layout__tab">Support</a>
+          <a href="#features" class="mdl-layout__tab">Examples</a>
+<!--
+          <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored mdl-shadow--4dp mdl-color--accent" id="add">
+            
+            <i class="material-icons" role="presentation">add</i>
+            <span class="visuallyhidden">Add</span>
+          </button>
+        -->
+        </div>
+      </header>
+      <main class="mdl-layout__content">
+
+        
+        <div class="mdl-layout__tab-panel is-active" id="overview">
+          <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+            <header class="section__play-btn mdl-cell mdl-cell--3-col-desktop mdl-cell--2-col-tablet mdl-cell--4-col-phone mdl-color--teal-100 mdl-color-text--white">
+              <i class="material-icons">play_circle_filled</i>
+            </header>
+            <div class="mdl-card mdl-cell mdl-cell--9-col-desktop mdl-cell--6-col-tablet mdl-cell--4-col-phone">
+                <img class="image image-right mdl-cell--12-col" src="images/perl-google-apis-client-library.png">
+            </div>
+            <div class="mdl-card mdl-cell mdl-cell--12-col-desktop mdl-cell--6-col-tablet mdl-cell--4-col-phone">
+              <div class="mdl-card__supporting-text">
+                <h4>Easily access Google APIs using Perl</h4>
+                <p>This is an un-official SDK to simplify Perl access to Google API Services including Google Cloud Services. </p>
+                <button class="mdl-button" style="padding-top: 5px; padding-bottom: 60px;">
+                    <img width="50%" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX4AAABcCAYAAABpyd51AAAAAXNSR0IArs4c6QAAHvtJREFUeAHtXQmYFNW1/qvXWRnWYQYHBMdRhHEQkEXDaCCIGty+MRHUCCbikodxS4TkkfceWdSEGI1PeZFgVBQjfu/Bp4njU8HlgYphBJR9G0dkGVaZjZnptd653V3dVdVV001P90w3nPt91V1113P/e+vcc8899xbAjhFgBBgBRoARYAQYAUaAEWAEGAFGgBFgBBgBRoARYAQYAUaAEWAEMhEBKU6i440XZ3YcjRFgBBgBRiBFCMix8o3F0K2UgSV0ibix4scqj8MZAUaAEWAEUoOAYPji8ocun1kxZoxc+FtH3fH24B6DLv6dZHFMkCyW/maZsD8jwAgwAoxA9yMg+/2HZb/7o6bDm3++4b8mfkUUCeYfNQMwY/yC6Q8pGHLpOkmy9Or+6jAFjAAjwAgwAvEiIMv+hhP7Ph37+aIpX1KaKMnfZpKRLX/gyAWC6Y89x4qHvutAvx5C48PODIGjTX488ZYb676MwtgsCfszAowAI5ASBIh39ywoHvF7yvxmuqKYkhE3F7MAh8WS9S1BETN9gUJsJwZGgRU7RoARYATSAYEQDxdMKUqzY8r4Jau1UBDPkn78TchYxY8Vx2QEGIHUIhDi4afE+M1UQKmllHNnBBgBRoARSCYCgpfHLfEbzQSSSQznxQgwAowAI5B6BAQvj4vxC1KiIqaePi6BEWAEGAFGIMkIGPJyluyTjDJnxwgwAoxAuiPAjD/dW4jpYwQYAUYgyQgw408yoJwdI8AIMALpjgAz/nRvIaaPEWAEGIEkI8CMP8mAcnaMACPACKQ7Asz4072FmD5GgBFgBJKMADP+JAPK2TECjAAjkO4IMONP9xZi+hgBRoARSDICzPiTDChnxwgwAoxAuiPAjD/dW4jpYwQYAUYgyQgw408yoJwdI8AIMALpjgAz/nRvIaaPEWAEGIEkI8CMP8mAcnaMACPACKQ7Asz4072FmD5GgBFgBJKMQNp/cMV3uB7umk/h2b4Z3j27IDecgL+5CbBIsPTqA0vvPrAWFsExehwcYy+h575JhoizYwQYAUbg9EIgLRm/LMtwfbgS7W+ugOeLDaaI++sPQFzerZvg+uDdQDzb0OHImT4DzgkTTdNxACPACDACZzICacf43ev/iZZF/wnfl7sTahfvjq1omj8XtrKhyL3rJ3CMHJNQPpyIEWAEGIHTFYG00fHLbjean3kcjXN/kjDTVzeSd/cOND48GydfeBay368O4ntGgBFgBM5oBNJC4vc3NaLxF/fBu3N70huj9ZXn4a3bg4JfP570vDlDRoARYAQyEYFuZ/z+E9+gYc5s+OpqU4Ofw4ns629KTd6cKyPACDACGYhAtzJ+2eNB4388nFKmX/CbP5LFz9gMbBommRGID4ExI+245TwLPF7AbpOx5n03VhyNLy3HOnUE8gfY8PNKK+yEN4iDHtvqxoIt8qln1I0pupXxtyz8I7zbNsdVfdt5F8Ax7lsQVjuWXr0Bsvzxk2mnd9d2uNd9Au/2Ldp8SNI/3Zn+ZHrhp1xgxVm9JNH/AOqIza1+1H3lwxsbvNhyUgtJ4KmfDUt+4ERJNj35ZLzzRhsW7MicTnvzNVmYVWENVKVhnxtzXvYgRXNFA/CS75WM+gy7wI6KwVKYuOyvPcT4U9em+f2suONSG0YWWZCl4iAnjvmwfqsXi7ec3mtqhWdZMb40UnGvw0eMX4wCmeMi1HcxzW4y0xTmmrGcbdiFyLv7ftiHVxhGddJgkHvbLHjIpLNl0VPBgeQ0Z/rl5Xb821QH+gb5nwaXvn0sGDLQhkmVTuzf6sK9b3jRrIoxeZw9yPSFn1XClZfbiPF7VDHS+NZhxTUhpi+o7DnQjqv6ebAwU6XbJNXH7dO2mZD8U+Mk3HmjE9PPN+h4VGDfAgvKSu2YfoUPK/7uwsLa1A0+qalfnLnq8G3X4R9nLt0arVsYv9/nRcvTj8WsePb0mcj90Y8hWWIbH4mBoeeTi3Dyr38ObuY6TdU7Yyqz8DuaZsbjSoY7sayHhKkkFSvOqdwo/7aIpKh4Zc6/jJZI1TKHbFNK9fWRMP/uHFT2ockcMReb1Y/nnmrDq0YzOdM8kxVgwYL7sjE6L478sq2ompaDc1e24sGa05T5xwFDOkeJzVFTQf2Jd+AsX0092XxKmH3TbcibNTsupq+QKFltyBO2+6cp00c/O35pwPRbjosptgeb9vmFtkfjsgY6sGRyZKBYvdmLBlWM9ev0KVSB6XZLou0nX0UYibfRj23qyqQbvbHoiaM+BTnBTGyBJpSQZ4+VaWrC58wyYvoyqRW9+HSnF4daIu2iUFBxRRaqcpUn/k8nBLpF4pfrl8J54Qk6aqENJ1cMIV29Vg7NuqYqwMDTCah0oGXqOBrYNIT4sezFNiw+qPJ0WPDID7MxnqRExZVcaEPpKl9AF96814MbH/WgOFdCy0lZowZS4qfz/8K/tWKhQ0IxZNS705nS+GiLVR/9hMat94ivmE7Fyi914MpCbRbtRzyY/5wbNSrv8nIHHrnOruqjFtx6lRUrlmegLkRVr9PxtssZv+xpgHzszQCWtv7t6PHDnTj55tnw7C4I+El5+cidde/piHXS63Rok1vL9EUJbj/mLXVh+f1O9FRKpKn3BHqoFdJxrgU3D7PAEQo7RgvB1YYLgRKqKu2YONiCoJAp49B+H17+wIvWs0nXXighwHfb/FhBi3nKOkLxACumnBVUHzmIOb9fQwNOTyseoLWEoaR2CjhaVN68iXTzCSwCjhlqw7D8EPFeGe9u9KE+9JiysmmguXmENYxZ8zekw9bpr8uJrkuILje9Ucf2eAnTEFGhv8qRNpyjvG1E9wqiW2BmXB/CfowVTq+EUrEIH3YSLhprg7uFPJp9eNVkUd7bRuG5VsyZTGUqmFO/WP+FB4tN0oSLMLiZcZlCeCiQ9Gv3EdOv1cXdssWNx2nBd/7YyAyz5yASOhAUOnTRA4+TCZcJ51hRlBPsGx6ic8cuH14K4WOURu0nFpqnU9sMK7SAujk5GceP+vHBpx6sijkbTKyPq8uPdZ/f04LpF1OfDdFnI/oO1/vw+movarpRcNG1aKxqdD5cPrIc8LvCGUlZfuTeWIf2tYVoX12M7O/fCkueVq4NRz7Db5yR9ymIhJmW5qQPOxplXEwwen0SskCMOSQplg6zY9YVkWb37nOh+mVdRsLyZyZZ/iijQwj3Mlo0rrzIjmM0qwgvLNN6zfotLig2VVO+7cQMlYXJ6EFeDDnfFrQ6UrVf2WAbpozx4KEXohmIKpruVsKM650YFsZBhqOuFYtDL3iqys6nReRZV6h0LEfIXLJWLXpb8ECVE0MUaodLqH5OGz7zalU4tcexrW2odpvUB2Q1c4WT2i3aVVziRMDMgXDfvCOCuzpmxaQsVOeRxY3ak/IUC69XkSXUvbTmowyWmihGD7lkKFAcGrBD4evfN7ekWrOW1u+I8Yff4GwLhlI/qtUxufKRDvxqih0kE+gcMXGis+o7Piz7bxcW741WIQUTWDDvtixMGqilTYSVDQTGj3Lgtp1k3LBca9wQLqwTfTycR4c3Eh6YloVrS6O16cL4YvxYB9Z/0I45a83V3R1m38nACAfoZEbxJpcbPo6KKlHbZV96BLbB1NmrpkeFG3l89mXnpo90uCdGDYnqdUZFpY1fk0v7EhSNcmJBo1HnkTFvYasx3ToeH2WR0NOG5XeqZgv6XOhF7qv2oxdaCJiK01uYlBHTN3N5xXY8eo0P096Mvy3bBANRScFqfpKqsptrfdhP854SpSJ9rBgDT0TNQTMg4jURV2jFZApfpfiQVFqs3NO/97gXq0OEm9VH10yq1HHcRjH9SJqetObz+FV+3Pp2/JhHUtOdz4d/dGSzftKLexb7UaKMkx45SrItHePEUyrhQ5O/8kAWT9NvzcHgv7diXlR5UlwLzSXnO/H63RbctUgnXHSyjyskmv9LmEeL8pNU6tbouBJGT8zGktx2zCQ1bFc787cyRZTILYpsGF2Ao6ICUnZoNSs6WOMzd1m75jmRh7fn5sBOJo2Z4lZt9+HhUVaV9BzsPO+M8WF1jQfL1tOUWs0JE6jYnO8ZMH1S52w76EchSSp9dbMAEiTjcvv3edFks2BYsVYC6jvcjkpi/GviyiWxSJ0v24eN9TJKFMnXasHYfkBNSJ0zldZQtC+SFROHSlgVUquUn6uVvg/RQKKoxgxr1CpjJ6kDepCqp2ygFq+GIz4cJT7hoZ+9hokjnqLebTRNLCO1nNoVldswhhi/Wj+vDlff51P5pCWMOFLTHYw8Gd7Vk6rFdEZBM4hHDZj+flok/oZwrdDVd/x1WZi6S8yOIkVVXZ8VZV3kbfFh2wEZhaRaKlIJBugTLVykqo8rFFZOdkYx/XYyRKindu1FQkNP1TtUMtaJmWtbsaSLLbW0/VWhPJX/rgOmuUv5o03DUhHQQIub/RQdaCoKSHaetDD727VWzL9Ey21teVZMmiguoKXRh3UbPHh+bUT3HTcZZDV0uW4R7xhNl6fRdDno3HjgtmxcazC9Ni9DuwBdTNP456Y5ImoIetmHEmdZE1Mfa16CeUjyyv54jx/XFiu4S7iQmDmIwQESLj1Hy5wFPUOHU9wdQdxGa2aWMjZuizG9p6nLnBeCUuAjD+ZifJiRyfifl9rxqooJGtfdj5cWt2FJaGAqJl3Li1X2yOBE0vRFhHlNHJgLlY2oRZhRuGWYzCWNSdH5Vl1F+0/Ufj6i9fkIrfln2/HirQ7VYGPBjClWVCuzQho4bh2uxfsQ7Ve5lfarBJ0Ld5Ip6fTSyGDXt8KBqnfbsELglpI+rq6QFfeo1jhESN26dswKS/U0GyDji4j6TMIUstRbkugMTF30KdxrETyFhAlH9TaaJ3X0Nw9LQcgJYvyZ5taQXvCxNV6YzXfyCsQAkIWlNJt5xMD0s6P6jim3RhiyiEiLeA+Emb7wkPGnl9uwLSbjEXGDbjfRq7Y6qq/1gtTbGncK2WnSxXpIZtk1O3wazAcKxi8cKanLwwrtoFfAm5h9eeCRFmT7R5iQWHz/OJbIHM5GCi2shz2QF8eEeNvK9jDTFynraYPetkQxJ44fZvqUV8thnTRPg8jTs3OwfHY2Xou6cvDGbCdor2HIWTBxiAoL8v30DS2twupszkqFiQeT9aWF89JQDuUVNtWgQJ7UR+8JM/1gpMWvtWGTpr4WVNK6i3Cp6OPBUoO/pbRYXaT2aPSomL4IkPHImx5NXyo6T6sKVCdP1X3XM/5U1SSBfE9G1pgTSN19SVatcWHq461YscmHFjMySIU1njZ7vXGLomw1ixjx16th6sjm32jK3nYKKsnoXaQyth7umgE3qWUf9WKXaoTK6m8NMKNyUvMY8H2AGOLkAYQt/Q8KS+xA+0Gy5ohAfsp3KhJOIa2MbQlinmPXMuqsfAmKUVWAALLGGVQgoSft2hU7d7UX7TsgQWSAMliRhcug8CBAqWm94HUDK6NaUlvWqfsYGROMCKUbPUTLsuo2Gi3ektXU5+oMgMKzgulS0cfVDTGWmLjG0RhWRaq1m2lACF/najEFWY11uBygyTA5D+rBPDk5xsrFRmabntAcVB/XfVjvk9LnHtm6BkhpaUnOnKbcC99spwuoJInosuE2jD2XrCl0/S5vMG3gosW8mXFMJfWLo20Gm3KSUQt9OcnIM948Ei9bxrp9MioUFQIxdDLMQG/V8QUNX3lwsK8dwwIjgYSRZDaLOq2O/MvdWoYUL92djUcq8MScjkPYiHmfTTmpV+p0UaLKCQ9WtNArBJXwQEl9+Juo2MKD/CnRkPCASYxRDB7kp2+/ZpM+uqdBK1zkhVS6+vSp6uPhatEaw+zrwk+mN5oJimms5AXEarPklaTk5DzLlPHLzeuVWF3y3zsvgxm/CqE1pEsWl3BT6Yyeuyq1UmjJCHtci3kusi8XOmvFtWln3Ir3Gfv/4S4fZoUP5yLGPtoG+uRz2O34pwefXEQ22+cHMSwabMNMWtCOOBmfbdMypEhYet7VHvEH1BJq01ANk2rw4a8rXegT4iRuWpCeMsmBIp0AYlS7lsPm9v36+OHBQxewZ78xnsokQxcdadnHCavwGKcnOEXPXc74pbxyyC2fG1Znd8M+DPK0IcceG4ZLy2L3rKNNMnaTTtLICXNOZTu8UXja+dGGnPnX2FBAzNhDrWZvpxMBSbepV8VUkxqo+ms/qmmBLPyy0gJqPIt5Tt25PfEridIOrZQQVE+M/9jVZNkUyn30ZU466E4pyo9PaFPXajqr96Hzg8jZCm2o6hkZSNHixbtdbL2hUJfw/7GglB7uSw4bbjzbhQV7lRxJrVKjlhAkDJ9AjN/oFSa1UVjap+R5AXWZN2ojmJKz+l+tIVL7n1tC+BpuQFTHitx3eR+nNR1hEdeh9SCdqHs8QmKX3HU94+/5LciHlmoqRycs4+W2c7Go9Wzcvfst/GjYjZpwo4fffD/cFY2CA37PvucyZfz9SS9pERsIMsTlkwhVGZY2iWiauvcxYPyB6uwVA4IjsqGIPM0kJnX19dLQgEEkrdIOSnYhBGhj3HayTagUm8wFLGGmT5YvR2i3rohGi8ARm39idMSxgges0Y7evQlYWok8u9Op6xyi43LaybtAv+kvHhppT5t6iIDJ5i6x61i7Y5l245qYEgV09wZ9VK9rbychULhU93FXuygnwlcO7XDjJ4pFUoCC9PhRz0O7hCKp8EbIEklKIdfit2FO81j8uXUY7WeUsHTH39Hi7rxY5CV749X0Epq5saWqt9YsUhr5Nx/yaw5Xg9WGeytNmo92JfbT0W4mMamjrd2pnR31He5QWWSEYtJmJO1Lqc7hdL+X8dHeEEai+6i6V91O5cGHj2gtQO2CB6wBe3T4quOY3Xf/rEtGNRkRqF3WQCeenWj2/kjoYRYkdpQLJX/YWXDTpOjIVZNpR284Dt3QhreVIcnlw61aWooq7LRZTufI5PMGZS0mFLSJ9sAIl+o+vpZm22pXVOHEnfqXUUSgNaKn6bTTeeWRQUKdLtX3JpwjdcVK9p7w9r4yUMAebw/c3nA5PnJHDKCaPSfx9KZXOk1A9edeHKZjC8zcOFoIzShHOyLXHNFSXFaZjVfIJn7qALK0IM6eTwevTb3EgeU/cmim1HRGBnbEYbNdTx+T2K8pwoKH7svCTMpfuFKywX+to129mrSn58M/N/siUmu4C8lYuznywr+/RcucgkjQyaIGFiwdoyTjc401DunPJ9gCB+yV5nacMpmhNaQ+pGOhNK7skiwsv436Xj86MC/U9yaPseOVn2WjTCdlRB5lvKqTzktGZeHZq6hOgdwlzKQP7czW2elvoo8KNYdKr9/igXZ93IpfPJiFm0N9tJi+jrXkx86wOi6QjBarltUGM0h1H6/fqKdPwvQ7czBvpCVsDVVJ39N4jWgeRjusJ11HZtcju575d7mqR8DvKbwJKw9swIKWEXCp58vBtqFzUN5FLun57xtxW8jn1P720KLRovd0PVWVhZNqPZK22Wea+9OrLlxCh68pOmZBfxEx44fE1UFl9q/zYE0H4ZEgOoRtgx+/GKWSB0gymXF7DmZEIp3Rd82kRtvns4PM9CNO6O5VA2stfYVKvRYgInrp6OzVkRRx3+mtUIQEuVQc1uP24q7HXXHpx+MuzDSijAf/5kb17ap1I4orPoTz0J0x5iS0QYuOUwq7LWIQuTgHFao1gDI6emQpXUINFMWQyA5+geZMfz+eed+rPfKBTmebRX30dhpvldlVuEC6WfO/6iMbUt3H/fjDu178hdaCIk7CpKtp09bVQVWXOkTEueg86kxkltqVTvWGd12xOf2r8DfrDYZMX6Hi5R1v4JkvlsIvRyQpJayj/y37fJj7ajvp8sxjXUfWGA7dQqZ57DQKIal/2mIX6JDMuN2xWjqoKrxrMHayVW+34x06nqArXUQijF2qns2cSlqj3E89vR8bj2jxOUSLvppFduLW63WzM7NjGmLV583PTDryKfSBpNT7IG1Eoq2vGk2NUcZqP9rw8cQz7VilkcFoEPlLO3ZrTIOCifQMUdhuPrbYrcWWom6pceGJddEAGDF9sWt2vm6mleo+XrvRFdhkqYZCuY+qIw1sc18zaWMlUQr+u4Xx20g//fCoO2JWZ8mO1zHrvV9i07GdMePubT6IR2qexf0rn8eJVnMgc2l54ZZLT/11j0lAV0WgjUQzf9+K59Z6DD9+oZDRQHrRZa+1Yhp1KmWaLMJa1YdG0nN71O5lGQteoPw3qFQaSqb0v5s++EKfVo049T35BhfPIsFNBi94RFcSjKfhC5GkhnetmvK0X6xKddkKQf+nWTuS8YlOBy7ivUVSf8TRHgCTYxo6qo9I30yHL4md2urcAvmqZhxdVW+xA/h62ji4bBN9zKeDRmug2c37tGP7hifbUW20XEe6/nuepHxIX2+4A53W53ZvctGMRj9oRBCtXtWOH7ziQp2JHb/4OJHo/5GjEiJpxT6BzvTx2O8QIDZZ3vAizW50QkKYCnFM9jqKs9Ct2RMRDk/xjZFySQxKhZMeaTkgyn7vX1OnTHzss78E1Drx1PGCXqWYMGAUhvcuQ++sAtr57sGBlsPYT9f2b2rxcf0Gas6gJGZtK0P24dmw+HpFZT1roh03kx48Ve47jxr19FSVFtTrD+1Lh4DR5hjQhjQn2eLX1fs7d1ib+NAJba6pp8X2yUMtaDwuo6CPhDo6EbXWbkM1qZvCNlWkcrifVA5bUldFzlkgQG0yWZwJRAO3YPR7qI27+0M0xf0sGE4boxrbqH9Q32tsorUkMq1UCxqxG0/CmFILmSnLaKT+luXx4/ODp5aHoGMU9c8jop/2oD1zZAhRG+s17MI+LtbextHhcy5hWUQ4tR/30zlJ2lljbJwSi/H+vDzaOAUx/9TIDlEzj8SyTyzVz0b+ELsbvsLm47tiZrD9RC3EFY/zZe/GyZJ/DzB/W/vQcJIRZJ74vbH6yXU4OCNvmkliryEJKnmOjry9J4dOP6TDs+jrXksU6Taw2VrCHPX+ACrU2+Bnpp888M1zooF4ldIW5rG6NCRwCqfJJvz4CaH+S6eVdsYJOsIfvomLnq7t4+IdTbe261bGb7fa8fiEufiXD3+F2savO9P2UWllWxNaB/wOzm9ugrPhuxhEEsGvv5fV8UaKqFzOPI87b1G+rUqnIt6ei0l0DMFHu2mdhSwQvj3ajiLdZOmLTzWCxJkHGNc44xDgPm6wiN7VrSjUNosm/gr3rf4ttpHKJqlOkuHq8xpKChvw2OQ7kJdlpNlKaokZn1mv0CfwlIqUDLZj+mDlSfdPC1NPRn0kQxeHHxmBNEOA+zjQLYu7+n5Q4MzH4km/xU1lZO+UZDeheDQWXTsdRXS4FLvYCCx4jk79rI1tSXWIFh3vooUpjTVL7Ow5BiPQ7QhwH08DiV/pBQ5S+whLn8sGXIynvniJdP97laCE/ns6e+AOOvphWtl3IWXQ0QwJVTapiejUTzrP/CU6Z37GeBtGllggJCRhKid2Qx89QJ/eI4uialqAY8cIZCYC3Me7Vcdv1GnGFY3A0v5/wMqvPyHJcyU2HN1qFM3Ur39OX9xy3lRUlU5Blo1sN9klhEAznbq48O3OLbolVDAnYgS6CIEzuY+nHeMXbW6RLLjy7AmBq/7kUaw99Dm2kOXPzhN1OOFqQpM7uI2kt7MAvbJ6oDC7D0YVDsd4GjSG9Cjpom7DxTACjAAjkJkIpCXjV0NZnNuPpPcrApfan+8ZAUaAEWAEEkOAVzwTw41TMQKMACOQsQgw48/YpmPCGQFGgBFIDAFm/InhxqkYAUaAEchYBJjxZ2zTMeGMACPACCSGADP+xHDjVIwAI8AIZCwCzPgztumYcEaAEWAEEkOAGX9iuHEqRoARYAQyFgFm/BnbdEw4I8AIMAKJIcCMPzHcOBUjwAgwAhmLADP+jG06JpwRYAQYgcQQYMafGG6cihFgBBiBjEWAGX/GNh0TzggwAoxAYggw408MN07FCDACjEDGIsCMP2ObjglnBBgBRiAxBJjxJ4Ybp2IEGAFGIGMRYMafsU3HhDMCjAAjkBgCzPgTw41TMQKMACOQsQiYMX7Z7/UcE7U62uTP2Mp1NeGMVVcjzuUxAoyAGQIhHi4bhRsxfhHR52k7tkEkeOItNzN/I+R0foLpC6zYMQKMACOQDgiEeLiPaIli/pIBgWIwKBgwbtbF513zh+UWiz3fIA57MQKMACPACKQpArLP07TzHz+98WDN8+uJxEa6NKobqwnd1uYDG9xtJ776uMdZF/WXrNkFFqst2yQuezMCjAAjwAikAQI+j+sbd/OBT3f946dzD218ZSeR1ExXlCrCSOIX5DvoEpJ+H7oK6MqiS8wEzOJTEDtGgBFgBBiBbkRAqHSEZN9Ol5Dyj9NlyPhtFGDkvOR5MhTgon/B+MXsgBl/CBT+YwQYAUYgzRAIrM8STYLxt9AleLjg5VGuI0YuwuyhSwwQLPFHwccejAAjwAikDQKKxC+YvSd0RS3sCmo7YvwiXDgRR7kCHvzDCDACjAAjkJYICEavXGlJIBPFCDACjAAjwAgwAowAI8AIMAKpRuD/AebmxjtTus0OAAAAAElFTkSuQmCC">
+                  </button><br/>
+              </div>
+              <div class="mdl-card__actions">
+
+              </div>
+            </div>
+            <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon" id="btn1">
+              <i class="material-icons">more_vert</i>
+            </button>
+            <ul class="mdl-menu mdl-js-menu mdl-menu--bottom-right" for="btn1">
+              <li class="mdl-menu__item">Lorem</li>
+              <li class="mdl-menu__item" disabled>Ipsum</li>
+              <li class="mdl-menu__item">Dolor</li>
+            </ul>
+          </section>
+          <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+            <div class="mdl-card mdl-cell mdl-cell--12-col">
+              <div class="mdl-card__supporting-text mdl-grid mdl-grid--no-spacing">
+                <h4 class="mdl-cell mdl-cell--12-col">Latest Activity</h4>
+                <div class="section__circle-container mdl-cell mdl-cell--2-col mdl-cell--1-col-phone">
+                  <div class="section__circle-container__circle mdl-color--primary"></div>
+                </div>
+                <div class="section__text mdl-cell mdl-cell--10-col-desktop mdl-cell--6-col-tablet mdl-cell--3-col-phone">
+                  <h5>Agent Exponential Backoff on error</h5>
+                  To maximise the chance of retry being successful, best practice suggests including an exponential backoff delay introduced when the agent requests return an error.  <a href="#">proident minim</a>.
+                </div>
+                <div class="section__circle-container mdl-cell mdl-cell--2-col mdl-cell--1-col-phone">
+                  <div class="section__circle-container__circle mdl-color--primary"></div>
+                </div>
+                <div class="section__text mdl-cell mdl-cell--10-col-desktop mdl-cell--6-col-tablet mdl-cell--3-col-phone">
+                  <h5>Quickstart Video Tutorial </h5>
+                  Google Project Setup, Credentials, Scopes and using goauth tool to obtain authenticated User tokens.<a href="#">proident minim</a>.
+                </div>
+                <div class="section__circle-container mdl-cell mdl-cell--2-col mdl-cell--1-col-phone">
+                  <div class="section__circle-container__circle mdl-color--primary"></div>
+                </div>
+                <div class="section__text mdl-cell mdl-cell--10-col-desktop mdl-cell--6-col-tablet mdl-cell--3-col-phone">
+                  <h5>Version 0.13 Reelased on CPAN</h5>
+                  <code>cpanm WebService::GoogleAPI::Client</code>
+                </div>
+              </div>
+              <div class="mdl-card__actions">
+                <a href="#" class="mdl-button">Read our features</a>
+              </div>
+            </div>
+            <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon" id="btn2">
+              <i class="material-icons">more_vert</i>
+            </button>
+            <ul class="mdl-menu mdl-js-menu mdl-menu--bottom-right" for="btn2">
+              <li class="mdl-menu__item">Lorem</li>
+              <li class="mdl-menu__item" disabled>Ipsum</li>
+              <li class="mdl-menu__item">Dolor</li>
+            </ul>
+          </section>
+          <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+            <div class="mdl-card mdl-cell mdl-cell--12-col">
+              <div class="mdl-card__supporting-text">
+                <h4>Technology</h4>
+                Dolore ex deserunt aute fugiat aute nulla ea sunt aliqua nisi cupidatat eu. Nostrud in laboris labore nisi amet do dolor eu fugiat consectetur elit cillum esse. Pariatur occaecat nisi laboris tempor laboris eiusmod qui id Lorem esse commodo in. Exercitation aute dolore deserunt culpa consequat elit labore incididunt elit anim.
+              </div>
+              <div class="mdl-card__actions">
+                <a href="#" class="mdl-button">Read our features</a>
+              </div>
+            </div>
+            <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon" id="btn3">
+              <i class="material-icons">more_vert</i>
+            </button>
+            <ul class="mdl-menu mdl-js-menu mdl-menu--bottom-right" for="btn3">
+              <li class="mdl-menu__item">Lorem</li>
+              <li class="mdl-menu__item" disabled>Ipsum</li>
+              <li class="mdl-menu__item">Dolor</li>
+            </ul>
+          </section>
+          <section class="section--footer mdl-color--white mdl-grid">
+            <div class="section__circle-container mdl-cell mdl-cell--2-col mdl-cell--1-col-phone">
+              <div class="section__circle-container__circle ">
+                  <svg width="130" height="130">
+                      <circle cx="75" cy="75" r="50" fill="#009688" stroke="black" stroke-width="3"/>
+                      <text x="50%" y="50%" text-anchor="middle" fill="white" font-size="40px" font-family='"Lato","Helvetica Neue",Helvetica,Arial,sans-serif' dx=".2em" dy=".6em">Perl</text>
+                    Sorry, your browser does not support inline SVG.
+                    </svg>
+              </div>
+            </div>
+            <div class="section__text mdl-cell mdl-cell--4-col-desktop mdl-cell--6-col-tablet mdl-cell--3-col-phone">
+              
+              Hello world
+            </div>
+            <div class="section__circle-container mdl-cell mdl-cell--2-col mdl-cell--1-col-phone">
+              <div class="section__circle-container__circle mdl-color--accent section__circle--big"></div>
+            </div>
+            <div class="section__text mdl-cell mdl-cell--4-col-desktop mdl-cell--6-col-tablet mdl-cell--3-col-phone">
+              <h5>Aiming for launch October 31, 2018</h5>
+              Things are moving around quite a bit at the moment so the interface can change slightly day-to-day. We are aiming to lock in a solid API interface on Halloween at least for the core methods.
+            </div>
+          </section>
+        </div>
+        <div class="mdl-layout__tab-panel" id="features">
+          <section class="section--center mdl-grid mdl-grid--no-spacing">
+            <div class="mdl-cell mdl-cell--12-col">
+              <h4>Features</h4>
+              Minim duis incididunt est cillum est ex occaecat consectetur. Qui sint ut et qui nisi cupidatat. Reprehenderit nostrud proident officia exercitation anim et pariatur ex.
+              <ul class="toc">
+                <h4>Contents</h4>
+                <a href="#lorem1">Lorem ipsum</a>
+                <a href="#lorem2">Lorem ipsum</a>
+                <a href="#lorem3">Lorem ipsum</a>
+                <a href="#lorem4">Lorem ipsum</a>
+                <a href="#lorem5">Lorem ipsum</a>
+              </ul>
+
+              <h5 id="lorem1">Lorem ipsum dolor sit amet</h5>
+              Excepteur et pariatur officia veniam anim culpa cupidatat consequat ad velit culpa est non.
+              <ul>
+                <li>Nisi qui nisi duis commodo duis reprehenderit consequat velit aliquip.</li>
+                <li>Dolor consectetur incididunt in ipsum laborum non et irure pariatur excepteur anim occaecat officia sint.</li>
+                <li>Lorem labore proident officia excepteur do.</li>
+              </ul>
+
+              <p>
+                Sit qui est voluptate proident minim cillum in aliquip cupidatat labore pariatur id tempor id. Proident occaecat occaecat sint mollit tempor duis dolor cillum anim. Dolore sunt ea mollit fugiat in aliqua consequat nostrud aliqua ut irure in dolore. Proident aliqua culpa sint sint exercitation. Non proident occaecat reprehenderit veniam et proident dolor id culpa ea tempor do dolor. Nulla adipisicing qui fugiat id dolor. Nostrud magna voluptate irure veniam veniam labore ipsum deserunt adipisicing laboris amet eu irure. Sunt dolore nisi velit sit id. Nostrud voluptate labore proident cupidatat enim amet Lorem officia magna excepteur occaecat eu qui. Exercitation culpa deserunt non et tempor et non.
+              </p>
+              <p>
+                Do dolor eiusmod eu mollit dolore nostrud deserunt cillum irure esse sint irure fugiat exercitation. Magna sit voluptate id in tempor elit veniam enim cupidatat ea labore elit. Aliqua pariatur eu nulla labore magna dolore mollit occaecat sint commodo culpa. Eu non minim duis pariatur Lorem quis exercitation. Sunt qui ex incididunt sit anim incididunt sit elit ad officia id.
+              </p>
+              <p id="lorem2">
+                Tempor voluptate ex consequat fugiat aliqua. Do sit et reprehenderit culpa deserunt culpa. Excepteur quis minim mollit irure nulla excepteur enim quis in laborum. Aliqua elit voluptate ad deserunt nulla reprehenderit adipisicing sint. Est in eiusmod exercitation esse commodo. Ea reprehenderit exercitation veniam adipisicing minim nostrud. Veniam dolore ex ea occaecat non enim minim id ut aliqua adipisicing ad. Occaecat excepteur aliqua tempor cupidatat aute dolore deserunt ipsum qui incididunt aliqua occaecat sit quis. Culpa sint aliqua aliqua reprehenderit veniam irure fugiat ea ad.
+              </p>
+              <p>
+                Eu minim fugiat laborum irure veniam Lorem aliqua enim. Aliqua veniam incididunt consequat irure consequat tempor do nisi deserunt. Elit dolore ad quis consectetur sint laborum anim magna do nostrud amet. Ea nulla sit consequat quis qui irure dolor. Sint deserunt excepteur consectetur magna irure. Dolor tempor exercitation dolore pariatur incididunt ut laboris fugiat ipsum sunt veniam aute sunt labore. Non dolore sit nostrud eu ad excepteur cillum eu ex Lorem duis.
+              </p>
+              <p>
+                Id occaecat velit non ipsum occaecat aliqua quis ut. Eiusmod est magna non esse est ex incididunt aute ullamco. Cillum excepteur sint ipsum qui quis velit incididunt amet. Qui deserunt anim enim laborum cillum reprehenderit duis mollit amet ad officia enim. Minim sint et quis aliqua aliqua do minim officia dolor deserunt ipsum laboris. Nulla nisi voluptate consectetur est voluptate et amet. Occaecat ut quis adipisicing ad enim. Magna est magna sit duis proident veniam reprehenderit fugiat reprehenderit enim velit ex. Ullamco laboris culpa irure aliquip ad Lorem consequat veniam ad ipsum eu. Ipsum culpa dolore sunt officia laborum quis.
+              </p>
 
 
+              
+              <h5 id="lorem3">Perl </h5>
 
-</style>
+              <p id="lorem4">
+                  <h3>Alternative approaches</h3>
+                  <ul class="toc">
+                      <li><a href="https://metacpan.org/pod/Mojolicious::Plugin::Google::Cloud::UserAgent"> Mojolicious::Plugin::Google::Cloud::UserAgent</a></li>
+                      <li><a href="https://metacpan.org/pod/Net::Google::Spreadsheets::V4">Net::Google::Spreadsheets::V4</a> - works as advertised</li>
+                      <li><a href="https://metacpan.org/pod/Net::Google::OAuth">Net::Google::OAuth</a> fresh update from Pavel</li>
+                      <li><a href="https://metacpan.org/pod/Google::API::Client">Google::API::Client for autodiscovery stuff</a></li>
+                  </ul>
+                  
+                  <h3>Links Worth Reviewing if considering Swagger based approaches</h3>
+                  <p id="lorem5">
+                  <ul>
+                  <li><a href="http://www.jebriggs.com/perl-20170706/index2.html">REST API Server Programming With Perl, Swagger And The Mojolicious Framework</a></li>
+                  <li><a href="https://github.com/APIs-guru/google-discovery-to-swagger">google-discovery-to-swagger</a></li>
+                  </ul>
+                  </p>
+              </p>
+              <p>
+                Enim ea officia excepteur ad veniam id reprehenderit eiusmod esse mollit consequat. Esse non aute ullamco Lorem aliqua qui dolore irure eiusmod aute aliqua proident labore aliqua. Ipsum voluptate voluptate exercitation laborum deserunt nulla elit aliquip et minim ex veniam. Duis cupidatat aute sunt officia mollit dolor ad elit ad aute labore nostrud duis pariatur. In est sint voluptate consectetur velit ea non labore. Ut duis ea aliqua consequat nulla laboris fugiat aute id culpa proident. Minim eiusmod laboris enim Lorem nisi excepteur mollit voluptate enim labore reprehenderit officia mollit.
+              </p>
+              <p>
+                Cupidatat labore nisi ut sunt voluptate quis sunt qui ad Lorem esse nisi. Ex esse velit ullamco incididunt occaecat dolore veniam tempor minim adipisicing amet. Consequat in exercitation est elit anim consequat cillum sint labore cillum. Aliquip mollit laboris ad labore anim.
+              </p>
+            </div>
+          </section>
+        </div>
+        <footer class="mdl-mega-footer">
+          <div class="mdl-mega-footer--middle-section">
+            <div class="mdl-mega-footer--drop-down-section">
+              <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
+              <h1 class="mdl-mega-footer--heading">About the Author</h1>
+              <ul class="mdl-mega-footer--link-list">
+                <li><a href="mailto:peter@pscott.com.au">Email Peter Scott</a></li>
+                <li><a href="https://pscott.com.au">Personal Site</a></li>
+                <li><a href="https://computerpros.com.au">Combined Computer Professionals</a></li>
+                <!-- <li><a href="#">Updates</a></li> -->
+              </ul>
+            </div>
+            <div class="mdl-mega-footer--drop-down-section">
+              <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
+              <h1 class="mdl-mega-footer--heading">Details</h1>
+              <ul class="mdl-mega-footer--link-list">
+                <li><a href="#">Spec</a></li>
+                <li><a href="#">Tools</a></li>
+                <li><a href="#">Resources</a></li>
+              </ul>
+            </div>
+            <div class="mdl-mega-footer--drop-down-section">
+              <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
+              <h1 class="mdl-mega-footer--heading">Official Google Links</h1>
+              <ul class="mdl-mega-footer--link-list">
+                <li><a href="#">Google Admin Console</a></li>
+                <li><a href="#">Google API </a></li>
+                <li><a href="#">Usage</a></li>
+                <li><a href="#">Products</a></li>
+                <li><a href="#">Contracts</a></li>
+              </ul>
+            </div>
+            <div class="mdl-mega-footer--drop-down-section">
+              <input class="mdl-mega-footer--heading-checkbox" type="checkbox" checked>
+              <h1 class="mdl-mega-footer--heading">Related Sites</h1>
+              <ul class="mdl-mega-footer--link-list">
+                <li><a href="#">Stack Overflow</a></li>
+                <li><a href="#">Perl Monks</a></li>
+                <li><a href="#">Google API Swagger Specs</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="mdl-mega-footer--bottom-section">
+            <div class="mdl-logo">
+              More Information
+            </div>
+            <ul class="mdl-mega-footer--link-list">
+              <li><a href="https://computerpros.net.au">&copy; 2018 Combined Computer Professionals</a></li>
 
-<script src='https://jeromeetienne.github.io/threex.terrain/examples/vendor/three.js/build/three-min.js'></script>
-<script src='https://jeromeetienne.github.io/threex.terrain/examples/vendor/three.js/examples/js/SimplexNoise.js'></script>
-<script src='https://jeromeetienne.github.io/threex.terrain/threex.terrain.js'></script>
-
-
-</head>
-<!-- available at https://pscott-au.github.io/WebService-GoogleAPI-Client/ -->
-<body>
-<!-- Using Threejs & Jerome Etienne's Threex -->
-
-<div style="
-    position: absolute;
-    top: 0;
-    left: 0;
-    opacity: 0.9;
-    z-index: -100;" ><!-- style="padding-bottom: 450px;" -->
-<div id='animcont' style=" background-color: #828291; ">
-        <svg width="130" height="130">
-                <circle cx="75" cy="75" r="50" fill="#009688" stroke="black" stroke-width="3"/>
-                <text x="50%" y="50%" text-anchor="middle" fill="white" font-size="40px" font-family='"Lato","Helvetica Neue",Helvetica,Arial,sans-serif' dx=".2em" dy=".6em">Perl</text>
-              Sorry, your browser does not support inline SVG.
-              </svg>
-    <h1 style="padding-top: 75px;padding-left: 100px;font-family: 'DejaVu Sans',sans-serif;">sudo cpanm WebService::GoogleAPI::Client</h1>
-
-</div>
-<div>
-<p>
-<img src="perl-google-apis-client-library.png" />
-    This is moving from my Private Version of WebService::GoogleAPI::Client.
-To chat about WebService::GoogleAPI::Client join me on <a href="https://gitter.im/WebService-Google/Lobby">Gitter</a></p>
-<h2>NB - This is not polished / production ready but is receiving a lot of effort and attention - contact me if you'd like to contribute</h2>
-<p>Subscribe to <a href="https://calendar.google.com/calendar/embed?src=shotgundriver.com_8ejfk543736dp8vjqehtafflks%40group.calendar.google.com&ctz=Australia%2FBrisbane">my Google Calendar </a>for events and release dates.
-<span class="circle2"    ><svg height="80" width="80"><circle cx="50" cy="50" r="25" stroke="black" stroke-width="3" fill="red" /><text rx="0" ry="40" fill="black">Perl</text></svg></span>
-<svg width="250" height="250">
-        <circle cx="125" cy="125" r="100" fill="#009688" stroke="black" stroke-width="3"/>
-        <text x="50%" y="50%" text-anchor="middle" fill="white" font-size="85px" font-family='"Lato","Helvetica Neue",Helvetica,Arial,sans-serif' dy=".3em">Perl</text>
-      Sorry, your browser does not support inline SVG.
-      </svg>
-
-
-
-    </p>
-
-<h2>Discussion</h2>
-
-<p style="color:red; font-weight: heavy">If you do take parts of this code for your own module please do me the common courtesy of attributing it</p>
-<p>Don't be a <abbr title="Many Users Prefer Political Posturing|oPinion over Evidenced Truth">MUPP/ET</abbr> - <span style="first-letter {font-weight: bold;color: red;}">Many Users Prefer Political Posturing over Evidenced Truth</span><br/>
-Differeing opinions on everything welcome but please make an effort to respect and understand others and treat communication efficiency as a priority.
-</p>
-<p>
-I suspect that this module has some fundamental architectural design issues that may make it non-maintainable. 
-While using the Google API discovery services to dynamically construct subclasses for services might sound great in reality it may prove a dead end.
-</p>
-<p>
-    NB - this library is for managing OAUTH'd user access services server-side on behalf of the authenticated user. 
-    You 'can' use this for your own API use only, but this is for other people who are granting you 
-    permission to use their Google Services; such as accessing their emails or executing queries that have costs involved against their billing account etc. 
-    If you are wanting to only access your own account you should also consider  <a href="https://cloud.google.com/iam/docs/understanding-service-accounts">Service Accounts</a> and JWT's as per <a href="https://metacpan.org/pod/Mojo::JWT::Google">Mojo::JWT::Google</a> and related/similar modules.
-</p>
-<p>
-    You can see who you have provided OAUTH'd access for your account at <a href="https://myaccount.google.com/permissions">Google Security - Apps with Account Access</a>
-</p>
-
-<h3>Alternative approaches</h3>
-<ul>
-    <li><li><a href="https://metacpan.org/pod/Mojolicious::Plugin::Google::Cloud::UserAgent"> Mojolicious::Plugin::Google::Cloud::UserAgent</a></li></li>
-    <li><a href="https://metacpan.org/pod/Net::Google::Spreadsheets::V4">Net::Google::Spreadsheets::V4</a> - works as advertised</li>
-    <li><a href="https://metacpan.org/pod/Net::Google::OAuth">Net::Google::OAuth</a> fresh update from Pavel</li>
-    <li><a href="https://metacpan.org/pod/Google::API::Client">Google::API::Client for autodiscovery stuff</a></li>
-</ul>
-
-<h3>Links Worth Reviewing if considering Swagger based approaches</h3>
-<p>
-<ul>
-<li><a href="http://www.jebriggs.com/perl-20170706/index2.html">REST API Server Programming With Perl, Swagger And The Mojolicious Framework</a></li>
-<li><a href="https://github.com/APIs-guru/google-discovery-to-swagger">google-discovery-to-swagger</a></li>
-</ul>
-</p>
-<p>
-Many thanks - hopefully this saves someone from the hours of frustration I've had trying to use my fave language to leverage Google API services.</br>
-<a href="mailto:peter@pscott.com.au">Peter Scott <peter@pscott.com.au></a>
-</p>
-
-<div style="font-size:small;font-weight: heavy; "></div>
-<iframe src="https://calendar.google.com/calendar/embed?src=shotgundriver.com_8ejfk543736dp8vjqehtafflks%40group.calendar.google.com&ctz=Australia%2FBrisbane" style="border: 0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
-<br/>Last udpated 6th October 2018</div>
-</div>
-</div>
-
-<!-- https://codepen.io/marctannous/pen/RNGjmz -->
-<script>
-        var renderer	= new THREE.WebGLRenderer({
-                antialias	: true
-            });
-        /* Fullscreen */
-            // renderer.setSize( window.innerWidth, window.innerHeight );
-            renderer.setSize( window.innerWidth, 400 );
-        /* Append to HTML */
-            //document.body.appendChild( renderer.domElement );
-            var container = document.getElementById('animcont');
-            container.appendChild( renderer.domElement );
-            var onRenderFcts= [];
-            var scene	= new THREE.Scene();
-            var camera	= new THREE.PerspectiveCamera(25, window.innerWidth /    window.innerHeight, 0.01, 1000);
-        /* Play around with camera positioning */
-            camera.position.z = 15; 
-          camera.position.y = 2;
-        /* Fog provides depth to the landscape*/
-          scene.fog = new THREE.Fog(0x000, 0, 45);
-            ;(function(){
-                var light	= new THREE.AmbientLight( 0x202020 )
-                scene.add( light )
-                var light	= new THREE.DirectionalLight('white', 5)
-                light.position.set(0.5, 0.0, 2)
-                scene.add( light )
-                var light	= new THREE.DirectionalLight('white', 0.75*2)
-                light.position.set(-0.5, -0.5, -2)
-                scene.add( light )		
-            })()
-            var heightMap	= THREEx.Terrain.allocateHeightMap(256,256)
-            THREEx.Terrain.simplexHeightMap(heightMap)	
-            var geometry	= THREEx.Terrain.heightMapToPlaneGeometry(heightMap)
-            THREEx.Terrain.heightMapToVertexColor(heightMap, geometry)
-        /* Wireframe built-in color is white, no need to change that */
-            var material	= new THREE.MeshBasicMaterial({
-                wireframe: true
-            });
-            var mesh	= new THREE.Mesh( geometry, material );
-            scene.add( mesh );
-            mesh.lookAt(new THREE.Vector3(0,1,0));
-        /* Play around with the scaling */
-            mesh.scale.y	= 3.5;
-            mesh.scale.x	= 3;
-            mesh.scale.z	= 0.20;
-            mesh.scale.multiplyScalar(10);
-        /* Play around with the camera */
-            onRenderFcts.push(function(delta, now){
-                mesh.rotation.z += 0.2 * delta;	
-            })
-            onRenderFcts.push(function(){
-                renderer.render( scene, camera );		
-            })
-            var lastTimeMsec= null
-            requestAnimationFrame(function animate(nowMsec){
-                requestAnimationFrame( animate );
-                lastTimeMsec	= lastTimeMsec || nowMsec-1000/60
-                var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec)
-                lastTimeMsec	= nowMsec
-                onRenderFcts.forEach(function(onRenderFct){
-                    onRenderFct(deltaMsec/1000, nowMsec/1000)
-                })
-            })
-        </script>
-</body>
+            </ul>
+          </div>
+        </footer>
+      </main>
+    </div>
+    <a href="https://metacpan.org/release/WebService-GoogleAPI-Client" target="_blank" id="view-source" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-color--accent mdl-color-text--accent-contrast">v0.13 on CPAN</a>
+    <script src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+  </body>
 </html>
