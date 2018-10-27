@@ -15,7 +15,7 @@ WebService::GoogleAPI::Client - Perl Google API Services OAUTH Client.
 
 # VERSION
 
-version 0.13.1
+version 0.14
 
 # SYNOPSIS
 
