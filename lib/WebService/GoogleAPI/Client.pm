@@ -89,8 +89,8 @@ has 'ua' => (
 has 'chi' => ( is => 'rw', default => sub { CHI->new( driver => 'File', max_key_length => 512, namespace => __PACKAGE__ ) }, lazy => 1 );
 has 'discovery' => (
   handles => [
-    qw/ get_method_meta discover_all extract_method_discovery_detail_from_api_spec get_api_discovery_for_api_id
-      methods_available_for_google_api_id list_of_available_google_api_ids  /
+    qw/  discover_all extract_method_discovery_detail_from_api_spec get_api_discovery_for_api_id
+      methods_available_for_google_api_id list_of_available_google_api_ids  /  ## get_method_meta 
   ],
   is      => 'ro',
   default => sub {
@@ -120,12 +120,8 @@ sub BUILD
 
   ## how to handle chi as a parameter
   $self->discovery->chi( $self->chi );    ## is this redundant? set in default?
-
-
   ## TODO - think about consequences of user not providing auth storage or user on instantiaton
-
 }
-
 
 =head2 C<api_query>
 

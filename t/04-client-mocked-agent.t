@@ -72,15 +72,16 @@ $client->user( $user );
         sub {
               my $res2 =  Mojo::Message::Response->new ;
               $res2->code( 200 );
-              $res2->body( "TESTED FINE" );
+              $res2->body( '{ "status": "ok" }');
               return $res2;
               });
 
 
     ok( my $cl = $client->api_query( api_endpoint_id => 'gmail.users.messages.list'  ), 'api_query - "gmail.users.messages.list"');
-    
-
-
+    ok (  $client->extract_method_discovery_detail_from_api_spec(  'gmail.users.messages.list', 'v1' ), 'extract_method_discovery_detail_from_api_spec');
+    ok ( $client->ua->header_with_bearer_auth_token(), 'header_with_bearer_auth_token' );
+    ok( my $cred      = $client->ua->auth_storage->get_credentials_for_refresh( $user ), 'get credentials'); 
+    ok(  my $new_token = $client->ua->refresh_access_token( $cred ), 'refresh token' );
 
 #ok ( $client->available_APIs(), 'Get available APIs');
 #ok ( $client->supported_as_text(), 'Supported as text');
