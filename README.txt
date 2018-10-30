@@ -5,7 +5,7 @@ NAME
 
 VERSION
 
-    version 0.13
+    version 0.16
 
 SYNOPSIS
 
@@ -58,6 +58,8 @@ EXAMPLES
           method => 'get',
           path => 'https://www.googleapis.com/calendar/users/me/calendarList',
         )->json;
+
+METHODS
 
  new
 
