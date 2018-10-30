@@ -63,7 +63,7 @@ METHODS
 
  new
 
-    WebService::GoogleAPI::Client->new( user => 'useremail@sdf.com',
+    WebService::GoogleAPI::Client->new( user => 'peter@pscott.com.au',
     gapi_json => '/fullpath/gapi.json' );
 
  api_query

@@ -107,7 +107,7 @@ has 'discovery' => (
 
 =head2 C<new>
 
-WebService::GoogleAPI::Client->new( user => 'useremail@sdf.com', gapi_json => '/fullpath/gapi.json' );
+WebService::GoogleAPI::Client->new( user => 'peter@pscott.com.au', gapi_json => '/fullpath/gapi.json' );
 
 =cut
 
