@@ -98,6 +98,7 @@ sub get_api_discovery_for_api_id
     ## TODO: split version if is in name:v3 format
   }
 
+ 
 
   croak( "get_api_discovery_for_api_id called with api param undefined" . Dumper $params) unless defined $params->{ api };
   $params->{ version } = $self->latest_stable_version( $params->{ api } ) unless defined $params->{ version };
@@ -599,6 +600,11 @@ sub methods_available_for_google_api_id
 
 Returns an array list of all the available API's described in the API Discovery Resource
 that is either fetched or cached in CHI locally for 30 days.
+
+    my $r = $agent->list_of_available_google_api_ids();
+    print "List of API Services ( comma separated): $r\n";
+
+    my @list = $agent->list_of_available_google_api_ids();
 
 =cut
 

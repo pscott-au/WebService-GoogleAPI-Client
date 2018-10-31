@@ -156,7 +156,7 @@ sub validated_api_query
     my $val = $params;
     $params = { path => $val, method => 'get', options => {}, };
   }
-
+ 
   my $res = $self->start( $self->build_http_transaction( $params ) )->res;
   
   ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction

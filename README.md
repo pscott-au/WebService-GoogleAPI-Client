@@ -19,7 +19,7 @@ version 0.16
 
 # SYNOPSIS
 
-Provides client access to [Google API V.1](https://developers.google.com/discovery/v1) Service End-Points using a user-agent that handles OAUTH2 authentication and access control and provides helpers to cache API Discovery specifications.
+Provides client access to [Google API V.1](https://developers.google.com/apis-explorer/) Service End-Points using a user-agent that handles OAUTH2 authentication and access control and provides helpers to cache API Discovery specifications.
 
 The guiding principal is to minimise the conceptual load when using the Client agent for users who want to make calls directly, but also make available functions to help explore unfamiliar API endpoints by offering optional validation etc against the latest published Google API Discovery specifications.
 
@@ -126,7 +126,7 @@ See ````perldoc goauth```` for more detail.
     {
         if ( $r->code eq '418' )
         {
-            print qq{Cool - I'm a teapot - this was caught ebfore sending the request through to Google \n};
+            print qq{Cool - I'm a teapot - this was caught before sending the request through to Google \n};
             print $r->body;
         }
         else ## other error - should appear in warnings but can inspect $r for more detail
@@ -218,8 +218,15 @@ I was unable to get the [Dist::Zilla](https://metacpan.org/pod/Dist::Zilla) pack
 
 # SEE ALSO
 
+- https://developers.google.com/apis-explorer/
+
+- https://console.developers.google.com/apis/
+
 - [Moo::Google](https://metacpan.org/pod/Moo::Google) - The original code base later forked into [WebService::Google::Client](https://metacpan.org/pod/WebService::Google::Client) but is heading in a different direction
+
 - [Google Swagger API https:](https:///github.com/APIs-guru/google-discovery-to-swagger) 
+
+- [Google Cloud Developer Cheat Sheet](https://docs.google.com/spreadsheets/d/1OkFbizpnc_iyzcApqRrqsNtUVazKJDtCyH5vw3352xM/edit?usp=sharing)
 
 # AUTHORS
 
