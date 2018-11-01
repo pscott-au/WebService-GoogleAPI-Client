@@ -446,16 +446,54 @@ sub has_scope_to_access_api_endpoint
 
   Return details about all Available Google APIs as provided by Google or in CHI Cache
 
-  On Success: Returns HASHREF with keys discoveryVersion,items,kind
+  On Success: Returns HASHREF containing items key => list of hashes describing each API
   On Failure: Warns and returns empty hashref
 
-    my $d = WebService::GoogleAPI::Client::Discovery->new;
+    my $client = WebService::GoogleAPI::Client->new; ## has discovery member WebService::GoogleAPI::Client::Discovery
+
+    $d = $client->discover_all();
+    $d = $client->discover_all(1); ## NB if include a parameter that evaluates to true such as '1' then the cache is flushed with a new version
+
+    ## OR
+    $d = $client->discovery-> discover_all();
+    $d = WebService::GoogleAPI::Client::Discovery->discover_all();
+
     print Dumper $d;
 
-    WebService::GoogleAPI::Client::Discovery->discover_all();
+      $VAR1 = {
+                'items' => [
+                            {
+                              'preferred' => bless( do{\(my $o = 1)}, 'JSON::PP::Boolean' ),
+                              'id' => 'abusiveexperiencereport:v1',
+                              'icons' => {
+                                            'x32' => 'https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png',
+                                            'x16' => 'https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png'
+                                          },
+                              'version' => 'v1',
+                              'documentationLink' => 'https://developers.google.com/abusive-experience-report/',
+                              'kind' => 'discovery#directoryItem',
+                              'discoveryRestUrl' => 'https://abusiveexperiencereport.googleapis.com/$discovery/rest?version=v1',
+                              'title' => 'Abusive Experience Report API',
+                              'name' => 'abusiveexperiencereport',
+                              'description' => 'Views Abusive Experience Report data, and gets a list of sites that have a significant number of abusive experiences.'
+                            }, ...
 
-    $client->discover_all();
-    $client->discover_all(1); ## NB if include a parameter that evaluates to true such as '1' then the cache is flushed with a new version
+    ## NB because the structure isn't indexed on the api name it can be convenient to post-process it
+    ## 
+    
+    my $new_hash = {};
+    foreach my $api ( @{ %{$client->discover_all()}{items} } )
+    {
+        # convert JSON::PP::Boolean to true|false strings
+        $api->{preferred}  = "$api->{preferred}" if defined $api->{preferred};
+        $api->{preferred}  = $api->{preferred} eq '0' ? 'false' : 'true';
+
+        $new_hash->{ $api->{name} } = $api;
+    }
+    print Dumper $new_hash->{gmail};
+     
+
+
 
 
 =head2 C<get_api_discovery_for_api_id>

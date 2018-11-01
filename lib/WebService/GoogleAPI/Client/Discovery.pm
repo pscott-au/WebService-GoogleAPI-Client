@@ -35,7 +35,7 @@ use List::Util qw/uniq/;
 use Hash::Slice qw/slice/;
 use Data::Dumper;
 use CHI;    # Caching .. NB Consider reviewing https://metacpan.org/pod/Mojo::UserAgent::Role::Cache
-
+use Switch;
 
 ## NB - I am not familiar with this moosey approach to OO so there may be obvious errors - keep an eye on this.
 
@@ -69,11 +69,14 @@ my $stats = {
 returns the cached version if avaiable in CHI otherwise retrieves discovery data via HTTP, stores in CHI cache and returns as
 a Perl data structure.
 
-  my $hashref = $self->get_api_discovery_for_api_id( 'gmail' );
-  my $hashref = $self->get_api_discovery_for_api_id( 'gmail:v3' );
+    my $hashref = $self->get_api_discovery_for_api_id( 'gmail' );
+    my $hashref = $self->get_api_discovery_for_api_id( 'gmail:v3' );
+
+NB: if deeper structure than the api_id is provided then only the head is used
+
+so get_api_discovery_for_api_id( 'gmail' ) is the same as get_api_discovery_for_api_id( 'gmail.some.child.method' )
 
 returns the api discovery specification structure ( cached by CHI ) for api id ( eg 'gmail ')
-
 
 returns the discovery data as a hashref, an empty hashref on certain failing conditions or croaks on critical errors.
 
@@ -238,14 +241,12 @@ sub discover_all
 
 Allows you to augment the cached stored version of the discovery structure
 
-augment_discover_all_with_unlisted_experimental_api( 
+    augment_discover_all_with_unlisted_experimental_api( 
                             {
                               'version' => 'v4',
                               'preferred' => 1,
                               'title' => 'Google My Business API',
-                              'description' => 'The Google My Business API
-provides an interface for managing business location information on
-Google.',
+                              'description' => 'The Google My Business API provides an interface for managing business location information on Google.',
                               'id' => 'mybusiness:v4',
                               'kind' => 'discovery#directoryItem',
                               'documentationLink' => "https://developers.google.com/my-business/",
@@ -262,6 +263,7 @@ if there is a conflict with the existing then warn and return the existing data 
 
 on success just returns the augmented structure
 
+NB - does not interpolate schema object '$ref' values.
 
 =cut
 
@@ -468,7 +470,7 @@ sub latest_stable_version
 
 
 ########################################################
-sub api_verson_urls
+sub api_version_urls
 {
   my ( $self ) = @_;
   ## transform structure to be keyed on api->versionRestUrl
@@ -487,7 +489,7 @@ sub api_verson_urls
 
 =head2 C<extract_method_discovery_detail_from_api_spec>
 
-$self->extract_method_discovery_detail_from_api_spec( $tree, $api_version )
+    $agent->extract_method_discovery_detail_from_api_spec( $tree, $api_version )
 
 returns a hashref representing the discovery specification for the method identified by $tree in dotted API format such as texttospeech.text.synthesize
 
@@ -520,7 +522,23 @@ sub extract_method_discovery_detail_from_api_spec
   $api_version = $self->latest_stable_version( $api_id ) unless $api_version;
   ## TODO: confirm that spec available for api version
   my $api_spec = $self->get_api_discovery_for_api_id( { api => $api_id, version => $api_version } );
-  ## TODO - check for failure?
+   
+  ## we use the schames to substitute into '$ref' keyed placeholders 
+  my $schemas = {};
+  foreach my $schema_key (sort keys %{$api_spec->{schemas}})
+  {
+      $schemas->{$schema_key} =  $api_spec->{'schemas'}{$schema_key};
+  }
+
+  ## recursive walk through the structure in _fix_ref
+  ##  substitute the schema keys into the total spec to include
+  ##  '$ref' values within the schema structures themselves
+  ##  including within the schema spec structures (NB assumes no cyclic structures )
+  ##   otherwise would could recursive chaos
+  my $api_spec_fix = $self->_fix_ref( $api_spec, $schemas ); ## first level ( '$ref' in the method params and return values etc )
+  $api_spec =  $self->_fix_ref($api_spec_fix, $schemas );    ## second level ( '$ref' in the interpolated schemas from first level )
+
+  ## now extract all the methods (recursive )
   my $all_api_methods = $self->_extract_resource_methods_from_api_spec( $api_id, $api_spec );
   if ( defined $all_api_methods->{ $tree } )
   {
@@ -560,6 +578,60 @@ sub _extract_resource_methods_from_api_spec
 }
 ########################################################
 
+#=head2 C<fix_ref>
+#
+#This sub walks through the structure and replaces any hashes keyed with '$ref' with
+#the value defined in $schemas->{ <value of keyed $ref> }
+#
+#eg 
+# ->{'response'}{'$ref'}{'Buckets'} 
+# is replaced with 
+# ->{response}{ $schemas->{Buckets} }
+#
+# It assumes that the schemas have been extracted from the original discover for the API
+# and is typically applued to the method ( api endpoint ) to provide a fully descriptive 
+# structure without external references.
+#
+#=cut
+
+########################################################
+sub _fix_ref
+{
+    my ( $self, $node, $schemas ) = @_;
+    my $ret = undef;
+    switch (ref($node) ) 
+    {
+            case '' { $ret = $node; }
+            case 'SCALAR' {
+                $ret = $node;
+                }
+            case 'ARRAY' { 
+                $ret = [];
+                foreach my $el ( @$node )
+                {
+                    push @$ret, $self->_fix_ref( $el, $schemas );
+                }
+            }
+            case 'HASH' { 
+                $ret = {};
+                foreach my $key ( keys %$node )
+                {
+                    if ( $key eq '$ref' )
+                    {
+                        #say $node->{'$ref'};
+                        $ret = $schemas->{ $node->{'$ref'} };
+                    }
+                    else 
+                    {
+                        $ret->{$key} = $self->_fix_ref( $node->{$key}, $schemas ); 
+                    }
+                }
+            }
+    }
+    return $ret;
+}
+########################################################
+
 
 =head2 C<methods_available_for_google_api_id>
 
@@ -569,18 +641,20 @@ representing the corresponding discovery specification for that method ( API End
 
     methods_available_for_google_api_id('gmail.users.settings.delegates.get')
 
-TODO: consider ? refactor to allow parameters either as a single api id such as 'gmail' 
-      as well as the currently accepted  hash keyed on the api and version
 
-SEE ALSO:  
-  The following methods are delegated through to Client::Discovery - see perldoc WebService::Client::Discovery for detils
-
-  get_method_meta 
-  discover_all 
-  extract_method_discovery_detail_from_api_spec 
-  get_api_discovery_for_api_id
 
 =cut
+
+#TODO: consider ? refactor to allow parameters either as a single api id such as 'gmail' 
+#      as well as the currently accepted  hash keyed on the api and version
+#
+#SEE ALSO:  
+#  The following methods are delegated through to Client::Discovery - see perldoc WebService::Client::Discovery for detils
+#
+#  get_method_meta 
+#  discover_all 
+#  extract_method_discovery_detail_from_api_spec 
+#  get_api_discovery_for_api_id
 
 ########################################################
 ## TODO: consider renaming ?

@@ -46,9 +46,9 @@ sub BUILD
 
 sub header_with_bearer_auth_token
 {
-  my ( $self ) = @_;
+  my ( $self, $headers ) = @_;
 
-  my $headers = {};
+  $headers = {} unless defined $headers;
 
   $headers->{ 'Accept-Encoding' } = 'gzip';
 
@@ -87,14 +87,15 @@ sub build_http_transaction
   my $http_method   = uc( $params->{ httpMethod } ) || 'GET';                                                          # uppercase ?
   my $optional_data = $params->{ options }          || '';
   my $path          = $params->{ path }             || carp( 'path parameter required for build_http_transaction' );
-  my $no_auth       = $params->{ no_auth }          || 0;                                                              ## default to including auth header - ie not setting no_auth
+  my $no_auth       = $params->{ no_auth }          || 0;  ## default to including auth header - ie not setting no_auth
+  my $headers       = $params->{ headers}           || {};
+
   carp 'Attention! You are using POST, but no payload specified' if ( ( $http_method eq 'POST' ) && !defined $optional_data );
   carp "build_http_transaction:: $http_method $path " if $self->debug;
   carp "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . Dumper $params unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
 
-
-  my $headers = {};
-  $headers = $self->header_with_bearer_auth_token() unless $no_auth;
+  ## NB - headers not passed if no_auth 
+  $headers = $self->header_with_bearer_auth_token( $headers ) unless $no_auth;
   if ( $http_method =~ /^POST|PATH|PUT|PATCH$/ixg )
   {
     ## ternary conditional on whether optional_data is set
