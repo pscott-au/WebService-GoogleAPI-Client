@@ -35,7 +35,7 @@ use List::Util qw/uniq/;
 use Hash::Slice qw/slice/;
 use Data::Dumper;
 use CHI;    # Caching .. NB Consider reviewing https://metacpan.org/pod/Mojo::UserAgent::Role::Cache
-use Switch;
+# use feature 
 
 ## NB - I am not familiar with this moosey approach to OO so there may be obvious errors - keep an eye on this.
 
@@ -599,35 +599,35 @@ sub _fix_ref
 {
     my ( $self, $node, $schemas ) = @_;
     my $ret = undef;
-    switch (ref($node) ) 
-    {
-            case '' { $ret = $node; }
-            case 'SCALAR' {
-                $ret = $node;
-                }
-            case 'ARRAY' { 
-                $ret = [];
-                foreach my $el ( @$node )
-                {
-                    push @$ret, $self->_fix_ref( $el, $schemas );
-                }
-            }
-            case 'HASH' { 
-                $ret = {};
-                foreach my $key ( keys %$node )
-                {
-                    if ( $key eq '$ref' )
-                    {
-                        #say $node->{'$ref'};
-                        $ret = $schemas->{ $node->{'$ref'} };
-                    }
-                    else 
-                    {
-                        $ret->{$key} = $self->_fix_ref( $node->{$key}, $schemas ); 
-                    }
-                }
-            }
+    my $r = ref($node);
+    
+
+    if ( $r eq 'ARRAY' ) { 
+        $ret = [];
+        foreach my $el ( @$node )
+        {
+            push @$ret, $self->_fix_ref( $el, $schemas );
+        }
     }
+    elsif ( $r eq 'HASH') 
+    { 
+        $ret = {};
+        foreach my $key ( keys %$node )
+        {
+            if ( $key eq '$ref' )
+            {
+                #say $node->{'$ref'};
+                $ret = $schemas->{ $node->{'$ref'} };
+            }
+            else 
+            {
+                $ret->{$key} = $self->_fix_ref( $node->{$key}, $schemas ); 
+            }
+        }
+    }
+    else 
+    { $ret = $node; }
+    
     return $ret;
 }
 ########################################################
