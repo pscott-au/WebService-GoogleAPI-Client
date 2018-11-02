@@ -39,9 +39,9 @@ use CHI;    # Caching .. NB Consider reviewing https://metacpan.org/pod/Mojo::Us
 
 ## NB - I am not familiar with this moosey approach to OO so there may be obvious errors - keep an eye on this.
 
-has 'ua' => ( is => 'rw', default => sub { WebService::GoogleAPI::Client::UserAgent->new }, lazy => 1 );    ## typically shared with parent instance of Client which sets on new
+has 'ua'    => ( is => 'rw', default => sub { WebService::GoogleAPI::Client::UserAgent->new }, lazy => 1 );    ## typically shared with parent instance of Client which sets on new
 has 'debug' => ( is => 'rw', default => 0, lazy => 1 );
-has 'chi' => ( is => 'rw', default => sub { CHI->new( driver => 'File', namespace => __PACKAGE__ ) }, lazy => 1 ); ## i believe that this gives priority to param if provided ?
+has 'chi'   => ( is => 'rw', default => sub { CHI->new( driver => 'File', namespace => __PACKAGE__ ) }, lazy => 1 ); ## i believe that this gives priority to param if provided ?
 
 
 my $stats = {
@@ -71,6 +71,8 @@ a Perl data structure.
 
     my $hashref = $self->get_api_discovery_for_api_id( 'gmail' );
     my $hashref = $self->get_api_discovery_for_api_id( 'gmail:v3' );
+    my $hashref = $self->get_api_discovery_for_api_id( 'gmail:v3.users.list' );
+    my $hashref = $self->get_api_discovery_for_api_id( { api=> 'gmail', version => 'v3' } ); ## nb enclosing bracer - must be hashref
 
 NB: if deeper structure than the api_id is provided then only the head is used
 
@@ -89,18 +91,18 @@ sub get_api_discovery_for_api_id
   ## TODO: consolidate the http method calls to a single function - ie - discover_all - simplistic quick fix -  assume that if no param then endpoint is as per discover_all
 
   $params = { api => $params } if ref( $params ) eq '';    ## scalar parameter not hashref - so assume is intended to be $params->{api}
+
   ## trim any resource, method or version details in api id
-  if ( $params->{ api } =~ /([^:]+):(v\d+)/ixsm )
+  if ( $params->{ api } =~ /([^:]+):(v[^\.]+)/ixsm )
   {
     $params->{ api }     = $1;
     $params->{ version } = $2;
   }
-  if ( $params->{ api } =~ /^(.*?)\./xsm )
+  if ( $params->{ api } =~ /^(.*?)\./xsm ) ## we only want the api and not the children so trime them out here
   {
-    $params->{ api } = $1;
-    ## TODO: split version if is in name:v3 format
+    $params->{ api } = $1; 
+    
   }
-
  
 
   croak( "get_api_discovery_for_api_id called with api param undefined" . Dumper $params) unless defined $params->{ api };
@@ -505,12 +507,21 @@ sub extract_method_discovery_detail_from_api_spec
   ## where tree is the method in format from _extract_resource_methods_from_api_spec() like projects.models.versions.get
   ##   the root is the api id - further '.' sep levels represent resources until the tailing label that represents the method
   return {} unless defined $tree;
+
   my @nodes = split /\./smx, $tree;
   croak( "tree structure '$tree' must contain at least 2 nodes including api id, [list of hierarchical resources ] and method - not " . scalar( @nodes ) )
     unless scalar( @nodes ) > 1;
 
   my $api_id = shift( @nodes );    ## api was head
   my $method = pop( @nodes );      ## method was tail
+
+  ## split out version if is defined as part of $tree
+  ## trim any resource, method or version details in api id
+  if ( $api_id =~ /([^:]+):([^\.]+)$/ixsm ) ## we have already isolated head from api tree children
+  {
+    $api_id         = $1;
+    $api_version    = $2;
+  }
 
   ## handle incorrect api_id
   if ( $self->service_exists( $api_id ) == 0 )
@@ -520,9 +531,13 @@ sub extract_method_discovery_detail_from_api_spec
   }
 
   $api_version = $self->latest_stable_version( $api_id ) unless $api_version;
+
+
   ## TODO: confirm that spec available for api version
   my $api_spec = $self->get_api_discovery_for_api_id( { api => $api_id, version => $api_version } );
-   
+
+
+
   ## we use the schames to substitute into '$ref' keyed placeholders 
   my $schemas = {};
   foreach my $schema_key (sort keys %{$api_spec->{schemas}})
@@ -539,13 +554,17 @@ sub extract_method_discovery_detail_from_api_spec
   $api_spec =  $self->_fix_ref($api_spec_fix, $schemas );    ## second level ( '$ref' in the interpolated schemas from first level )
 
   ## now extract all the methods (recursive )
-  my $all_api_methods = $self->_extract_resource_methods_from_api_spec( $api_id, $api_spec );
+  my $all_api_methods = $self->_extract_resource_methods_from_api_spec( "$api_id:$api_version", $api_spec );
+  #print Dumper $all_api_methods;exit;
   if ( defined $all_api_methods->{ $tree } )
   {
     return $all_api_methods->{ $tree };
   }
   else
   {
+    #return $all_api_methods->{ "$api_id:$api_version" } if ( defined $all_api_methods->{ "$api_id:$api_version" } );
+    return $all_api_methods->{ $tree } if  ( $all_api_methods = $self->_extract_resource_methods_from_api_spec( "$api_id", $api_spec ) );
+
     carp( "Unable to find method detail for '$tree' within Google Discovery Spec for $api_id version $api_version" ) if $self->debug;
     return {};
   }
@@ -639,8 +658,9 @@ Returns a hashref keyed on the Google service API Endpoint in dotted format.
 The hashed content contains a structure
 representing the corresponding discovery specification for that method ( API Endpoint )
 
-    methods_available_for_google_api_id('gmail.users.settings.delegates.get')
+    methods_available_for_google_api_id('gmail.users.settings.delegates.get');
 
+    methods_available_for_google_api_id('gmail.users.settings.delegates.get', 'v1');
 
 
 =cut
@@ -661,6 +681,7 @@ representing the corresponding discovery specification for that method ( API End
 sub methods_available_for_google_api_id
 {
   my ( $self, $api_id, $version ) = @_;
+
   $version = $self->latest_stable_version( $api_id ) unless $version;
   ## TODO: confirm that spec available for api version
   my $api_spec = $self->get_api_discovery_for_api_id( { api => $api_id, version => $version } );
