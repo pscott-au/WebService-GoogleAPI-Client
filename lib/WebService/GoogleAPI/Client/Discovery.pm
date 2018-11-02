@@ -21,17 +21,18 @@ say $client-dicovery->chi->root_dir(); ## provides full file path to temp storag
 
 =head2 TODO
 
-* deal with case of service names - either make it case insensitive or lock in a consistent approach - currently smells like case changes on context
-* handle 403 ( Daily Limit for Unauthenticated Use Exceeded.) errors when reqeusting a disdovery resource for a resvice 
-  but do we have access to authenticated reqeusts?
-* consider refactoring this entire module into UserAgent .. NB - this is also included as property of  Services.pm which is the factory for dynamic classes
+=over 2
+
+=item * handle 403 ( Daily Limit for Unauthenticated Use Exceeded.) errors when reqeusting a discovrey resource for a service but do we have access to authenticated reqeusts?
+
+=back
 
 =cut
 
 use Moo;
 use Carp;
 use WebService::GoogleAPI::Client::UserAgent;
-use List::Util qw/uniq/;
+use List::Util  qw/uniq/;  ## are these util dependencies necessary?
 use Hash::Slice qw/slice/;
 use Data::Dumper;
 use CHI;    # Caching .. NB Consider reviewing https://metacpan.org/pod/Mojo::UserAgent::Role::Cache
@@ -53,7 +54,7 @@ my $stats = {
     # total bytes received
   },
   cache => {
-    count => 0,
+    get => 0,
     # last request timestamp
     # last request response_code 
     # last request response_code_count
