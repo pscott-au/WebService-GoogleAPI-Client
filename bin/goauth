@@ -1,5 +1,7 @@
 #!perl
 
+use strictures;
+
 package goauth;
 
 use Carp;
@@ -12,7 +14,7 @@ use feature 'say';
 use Net::EmptyPort qw(empty_port);
 
 use Crypt::JWT qw(decode_jwt);
-use strictures;
+
 
 
 # ABSTRACT: CLI tool with mini http server for negotiating Google OAuth2 Authorisation access tokens that allow offline access to Google API Services on behalf of the user.
