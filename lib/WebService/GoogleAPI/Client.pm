@@ -72,7 +72,7 @@ Package includes I<go_auth> CLI Script to collect initial end-user authorisation
 
 =cut
 
-use Data::Dumper;
+use Data::Dump;
 use Moo;
 use WebService::GoogleAPI::Client::UserAgent;
 use WebService::GoogleAPI::Client::Discovery;
@@ -172,7 +172,7 @@ $self->access_token must be valid
   print  $gapi_agent->api_query(
             api_endpoint_id => 'gmail.users.messages.list', ## auto sets method to GET, path to 'https://www.googleapis.com/calendar'
           )->to_string;
-  #print Dumper $r;
+  #print pp $r;
 
 
   NB: including the version in the API Endpoint Spec is not supported .. yet? eg gmail:v1.users.messages.list .. will always use the latest stable version
@@ -221,7 +221,7 @@ sub api_query
   {
     $params = { @params_array };    ## what happens if not even count
   }
-  carp( Dumper $params) if $self->debug > 10;
+  carp( pp $params) if $self->debug > 10;
 
   my @teapot_errors = ();           ## used to collect pre-query validation errors - if set we return a response with 418 I'm a teapot
 
@@ -283,7 +283,7 @@ sub api_query
         if ( $params->{ path } =~ /\{.+\}/xms )    ## there are un-interpolated variables in the path - try to fill them for this param if reqd
         {
           carp( "$params->{path} includes unfilled variables " ) if $self->debug > 10;
-          carp Dumper $params if $self->debug > 10;
+          carp pp $params if $self->debug > 10;
           ## interpolate variables into URI if available and not filled
           if ( $method_discovery_struct->{ parameters }{ $meth_param_spec }{ 'location' } eq 'path' )    ## this is a path variable
           {
@@ -327,7 +327,7 @@ sub api_query
 
 
       ## prepend base if it doesn't match expected base
-      #print Dumper $method_discovery_struct;
+      #print pp $method_discovery_struct;
       $api_discovery_struct->{ baseUrl } =~ s/\/$//sxmg;    ## remove trailing '/'
       $params->{ path } =~ s/^\///sxmg;                     ## remove leading '/'
 
@@ -375,7 +375,7 @@ sub api_query
   }
   else
   {
-    #carp Dumper $params;
+    #carp pp $params;
 
     return $self->ua->validated_api_query( $params );
 
@@ -490,7 +490,7 @@ sub has_scope_to_access_api_endpoint
 
         $new_hash->{ $api->{name} } = $api;
     }
-    print Dumper $new_hash->{gmail};
+    print dump $new_hash->{gmail};
      
 
 

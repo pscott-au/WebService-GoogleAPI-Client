@@ -34,7 +34,7 @@ use Carp;
 use WebService::GoogleAPI::Client::UserAgent;
 use List::Util  qw/uniq/;  ## are these util dependencies necessary?
 use Hash::Slice qw/slice/;
-use Data::Dumper;
+use Data::Dump;
 use CHI;    # Caching .. NB Consider reviewing https://metacpan.org/pod/Mojo::UserAgent::Role::Cache
 # use feature 
 
@@ -106,11 +106,11 @@ sub get_api_discovery_for_api_id
   }
  
 
-  croak( "get_api_discovery_for_api_id called with api param undefined" . Dumper $params) unless defined $params->{ api };
+  croak( "get_api_discovery_for_api_id called with api param undefined" . pp $params) unless defined $params->{ api };
   $params->{ version } = $self->latest_stable_version( $params->{ api } ) unless defined $params->{ version };
 
-  croak( "get_api_discovery_for_api_id called with empty api param defined" . Dumper $params)     if $params->{ api } eq '';
-  croak( "get_api_discovery_for_api_id called with empty version param defined" . Dumper $params) if $params->{ version } eq '';
+  croak( "get_api_discovery_for_api_id called with empty api param defined" . pp $params)     if $params->{ api } eq '';
+  croak( "get_api_discovery_for_api_id called with empty version param defined" . pp $params) if $params->{ version } eq '';
 
   my $aapis = $self->available_APIs();
 
@@ -130,7 +130,7 @@ sub get_api_discovery_for_api_id
   #carp "get_api_discovery_for_api_id requires data from  $api_discovery_uri" if $self->debug;
   if ( my $dat = $self->chi->get( $api_discovery_uri ) )    ## clobbers some of the attempted thinking further on .. just return it for now if it's there
   {
-    #carp Dumper $dat;
+    #carp pp $dat;
     $self->{stats}{cache}{get}++;
     return $dat;
   }
@@ -139,7 +139,7 @@ sub get_api_discovery_for_api_id
   {
     carp "CHI '$api_discovery_uri' cached data with root = " . $self->chi->root_dir . "expires  in ", scalar( $expires_at ) - time(), " seconds\n" if $self->debug;
 
-    #carp "Value = " . Dumper $self->chi->get( $api_discovery_uri ) if  $self->debug ;
+    #carp "Value = " . pp $self->chi->get( $api_discovery_uri ) if  $self->debug ;
     return $self->chi->get( $api_discovery_uri );
 
   }
@@ -153,13 +153,13 @@ sub get_api_discovery_for_api_id
     {
       my $dat = $ret->json || croak( "failed to convert $api_discovery_uri return data in json" );
 
-      #carp("dat1 = " . Dumper $dat);
+      #carp("dat1 = " . pp $dat);
       $self->chi->set( $api_discovery_uri, $dat, '30 days' );
       $self->{stats}{network}{get}++;
       return $dat;
 
       #my $ret_data = $self->chi->get( $api_discovery_uri );
-      #carp ("ret_data = " . Dumper $ret_data) unless ref($ret_data) eq 'HASH';
+      #carp ("ret_data = " . pp $ret_data) unless ref($ret_data) eq 'HASH';
       #return $ret_data;# if ref($ret_data) eq 'HASH';
       #croak();
       #$self->chi->remove( $api_discovery_uri ) unless eval '${^TAINT}'; ## if not hashref then assume is corrupt so delete it
@@ -168,11 +168,11 @@ sub get_api_discovery_for_api_id
     {
       ## TODO - why is this failing for certain resources ?? because the urls contain a '$' ? because they are now authenticated?
       carp( "Fetching resource failed - $ret->message" );    ## was croaking
-      carp( Dumper $ret );
+      carp( pp $ret );
       return {};                                             #$ret;
     }
   }
-  croak( "something went wrong in get_api_discovery_for_api_id key = '$api_discovery_uri' - try again to see if data corruption has been flushed for " . Dumper $params);
+  croak( "something went wrong in get_api_discovery_for_api_id key = '$api_discovery_uri' - try again to see if data corruption has been flushed for " . pp $params);
 
   #return $self->chi->get( $api_discovery_uri );
   #croak('never gets here');
@@ -277,7 +277,7 @@ sub augment_discover_all_with_unlisted_experimental_api
 
   my $all = $self->discover_all();
 
-  #warn Dumper $all;
+  #warn pp $all;
   ## fail if any of the expected fields are not provided
   foreach my $field ( qw/version title description id kind documentationLink discoveryRestUrl name/ )    ## icons preferred
   {
@@ -340,7 +340,7 @@ sub available_APIs
   return [] unless defined $d_all->{ items };
   my $all = $d_all->{ items };
 
-  #print Dumper $all;
+  #print pp $all;
   for my $i ( @$all )
   {
     $i = { map { $_ => $i->{ $_ } } grep { exists $i->{ $_ } } qw/name version documentationLink discoveryRestUrl/ };
@@ -348,27 +348,21 @@ sub available_APIs
   my @subset = uniq map { $_->{ name } } @$all;    ## unique names
                                                    # carp scalar @$all;
                                                    # carp scalar @subset;
-                                                   # carp Dumper \@subset;
+                                                   # carp dump \@subset;
                                                    # my @a = map { $_->{name} } @$all;
 
   my @arr;
   for my $s ( @subset )
   {
-    #print Dumper $s;
+    #print pp $s;
     my @v               = map      { $_->{ version } } grep           { $_->{ name } eq $s } @$all;
     my @doclinks        = uniq map { $_->{ documentationLink } } grep { $_->{ name } eq $s } @$all;
     my @discovery_links = map      { $_->{ discoveryRestUrl } } grep  { $_->{ name } eq $s } @$all;
 
-    # carp "Match! :".Dumper \@v;
-    # my $versions = grep
     push @arr, { name => $s, versions => \@v, doclinks => \@doclinks, discoveryRestUrl => \@discovery_links };
   }
 
-  #carp Dumper \@arr;
-  #exit;
   return \@arr;
-
-  # return \@a;
 }
 
 =head2 C<service_exists>
@@ -556,7 +550,7 @@ sub extract_method_discovery_detail_from_api_spec
 
   ## now extract all the methods (recursive )
   my $all_api_methods = $self->_extract_resource_methods_from_api_spec( "$api_id:$api_version", $api_spec );
-  #print Dumper $all_api_methods;exit;
+  #print dump $all_api_methods;exit;
   if ( defined $all_api_methods->{ $tree } )
   {
     return $all_api_methods->{ $tree };

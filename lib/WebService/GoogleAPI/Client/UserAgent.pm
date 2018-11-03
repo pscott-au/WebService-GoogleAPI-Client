@@ -11,7 +11,7 @@ extends 'Mojo::UserAgent';
 use WebService::GoogleAPI::Client::Credentials;
 use WebService::GoogleAPI::Client::AuthStorage;
 use Mojo::UserAgent;
-use Data::Dumper;    # for dev debug
+use Data::Dump;    # for dev debug
 
 use Carp;
 
@@ -92,14 +92,30 @@ sub build_http_transaction
 
   carp 'Attention! You are using POST, but no payload specified' if ( ( $http_method eq 'POST' ) && !defined $optional_data );
   carp "build_http_transaction:: $http_method $path " if $self->debug;
-  carp "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . Dumper $params unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
+  carp "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . pp $params unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
 
   ## NB - headers not passed if no_auth 
   $headers = $self->header_with_bearer_auth_token( $headers ) unless $no_auth;
   if ( $http_method =~ /^POST|PATH|PUT|PATCH$/ixg )
   {
     ## ternary conditional on whether optional_data is set
-    return $optional_data eq '' ? $self->build_tx( $http_method => $path => $headers ) : $self->build_tx( $http_method => $path => $headers => json => $optional_data );
+    ## return $optional_data eq '' ? $self->build_tx( $http_method => $path => $headers ) : $self->build_tx( $http_method => $path => $headers => json => $optional_data );
+    if ( $optional_data eq '' )
+    {
+      return $self->build_tx( $http_method => $path => $headers );
+    }
+    else
+    {
+      if ( ref($optional_data) eq 'HASH' )
+      {
+        return $self->build_tx( $http_method => $path => $headers => json => $optional_data ); 
+      }
+      elsif ( ref($optional_data) eq '') ## am assuming is a post with options containing a binary payload
+      {
+        return $self->build_tx( $http_method => $path => $headers =>  $optional_data ); 
+      }
+     
+    }
   }
   else    ## DELETE or GET
   {
