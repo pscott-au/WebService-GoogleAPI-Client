@@ -44,6 +44,8 @@ sub BUILD
 
 =cut
 
+## TODO: this should probably nbe handled ->on('start' => sub {}) as per https://metacpan.org/pod/Mojolicious::Guides::Cookbook#Decorating-follow-up-requests
+
 sub header_with_bearer_auth_token
 {
   my ( $self, $headers ) = @_;
