@@ -221,7 +221,7 @@ sub api_query
   {
     $params = { @params_array };    ## what happens if not even count
   }
-  carp( pp $params) if $self->debug > 10;
+  carp( pp $params) if $self->{debug} > 10;
 
   my @teapot_errors = ();           ## used to collect pre-query validation errors - if set we return a response with 418 I'm a teapot
 
@@ -268,6 +268,7 @@ sub api_query
 
       foreach my $meth_param_spec ( keys %{ $method_discovery_struct->{ parameters } } )
       {
+        carp("Checking $meth_param_spec") if ($self->{debug}>10);
         ## set default value if is not provided within $params->{options} - nb technically not required but provides visibility of the params if examining the options when debugging
         $params->{ options }{ $meth_param_spec } = $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default }
           if (
@@ -282,19 +283,19 @@ sub api_query
         #carp("$meth_param_spec  has a user option value defined") if ( defined $params->{options}{$meth_param_spec} );
         if ( $params->{ path } =~ /\{.+\}/xms )    ## there are un-interpolated variables in the path - try to fill them for this param if reqd
         {
-          carp( "$params->{path} includes unfilled variables " ) if $self->debug > 10;
-          carp pp $params if $self->debug > 10;
+          carp( "$params->{path} includes un-filled variables " ) if $self->debug > 10;
+        carp (Dumper $params) if $self->debug > 10;
           ## interpolate variables into URI if available and not filled
           if ( $method_discovery_struct->{ parameters }{ $meth_param_spec }{ 'location' } eq 'path' )    ## this is a path variable
           {
             ## requires interpolations into the URI -- consider && into containing if
-            if ( $params->{ path } =~ /\{$meth_param_spec\}/xg )                                         ## eg match {jobId} in 'v1/jobs/{jobId}/reports/{reportId}'
+            if ( $params->{ path } =~ /\{\+*$meth_param_spec\}/xg )                                         ## eg match {jobId} in 'v1/jobs/{jobId}/reports/{reportId}'
             {
               ## if provided as an option
               if ( defined $params->{ options }{ $meth_param_spec } )
               {
-                carp( "DEBUG: $meth_param_spec is defined in param->{options}" ) if $self->debug > 10;
-                $params->{ path } =~ s/\{$meth_param_spec\}/$params->{options}{$meth_param_spec}/xsmg;
+                carp( "DEBUG: $meth_param_spec is defined in param->{options}" ) if $self->{debug} > 10;
+                $params->{ path } =~ s/\{\+*$meth_param_spec\}/$params->{options}{$meth_param_spec}/xsmg;
                 ## TODO - possible source of errors in future - do we need to undefine the option here?
                 ## undefining it so that it doesn't break post contents
                 delete $params->{ options }{ $meth_param_spec };
@@ -324,6 +325,10 @@ sub api_query
       }
 
       ## error now if there remain uninterpolated variables in the path ?
+      if ( $params->{ path } =~ /\{.+\}/xms ) 
+      {
+         push @teapot_errors, "Path '$params->{path}' includes unfilled variable after processing";
+      }
 
 
       ## prepend base if it doesn't match expected base

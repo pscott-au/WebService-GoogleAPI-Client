@@ -5,7 +5,7 @@ NAME
 
 VERSION
 
-    version 0.17.1
+    version 0.18
 
 SYNOPSIS
 
