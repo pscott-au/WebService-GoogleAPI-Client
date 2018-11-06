@@ -6,7 +6,7 @@ package goauth;
 
 use Carp;
 use Mojolicious::Lite;
-use Data::Dump;
+use Data::Dump qw/pp/;
 use Path::Class;
 use Config::JSON;
 use Tie::File;
