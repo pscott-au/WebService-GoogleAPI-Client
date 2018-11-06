@@ -6,7 +6,6 @@ package goauth;
 
 use Carp;
 use Mojolicious::Lite;
-use Data::Dump qw/pp/;
 use Path::Class;
 use Config::JSON;
 use Tie::File;
@@ -212,7 +211,7 @@ sub runserver
     {
       app->log->info( "Authorization code was retrieved: " . $c->param( 'code' ) );
       $tokens = $c->get_new_tokens( $c->param( 'code' ) );
-      app->log->info( "App got new tokens: " . pp $tokens);
+      app->log->info( "App got new tokens: "  ); # . join(',' keys %{$tokens})
       if ( $tokens )
       {
 
