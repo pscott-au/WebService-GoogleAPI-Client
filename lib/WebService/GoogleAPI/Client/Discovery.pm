@@ -34,7 +34,7 @@ use Carp;
 use WebService::GoogleAPI::Client::UserAgent;
 use List::Util  qw/uniq/;  ## are these util dependencies necessary?
 use Hash::Slice qw/slice/;
-use Data::Dump;
+use Data::Dump qw/pp/;
 use CHI;    # Caching .. NB Consider reviewing https://metacpan.org/pod/Mojo::UserAgent::Role::Cache
 # use feature 
 

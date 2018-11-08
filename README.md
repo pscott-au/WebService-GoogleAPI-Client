@@ -229,6 +229,10 @@ See the examples folder for specific access examples.
 
 - https://console.developers.google.com/apis/
 
+- https://metacpan.org/pod/release/DOMM/LWP-Authen-OAuth2-0.15/lib/LWP/Authen/OAuth2/Overview.pod
+
+- [LWP::Authen::OAuth2::Overview](https://metacpan.org/pod/release/DOMM/LWP-Authen-OAuth2-0.15/lib/LWP/Authen/OAuth2/Overview.pod) has good overview of OAUTH2
+
 - [Moo::Google](https://metacpan.org/pod/Moo::Google) - The original code base later forked into [WebService::Google::Client](https://metacpan.org/pod/WebService::Google::Client) but currently looks stagnant
 
 - [Google Swagger API https:](https:///github.com/APIs-guru/google-discovery-to-swagger) 

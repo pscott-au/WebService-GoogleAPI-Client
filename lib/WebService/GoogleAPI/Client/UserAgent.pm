@@ -11,7 +11,7 @@ extends 'Mojo::UserAgent';
 use WebService::GoogleAPI::Client::Credentials;
 use WebService::GoogleAPI::Client::AuthStorage;
 use Mojo::UserAgent;
-use Data::Dump;    # for dev debug
+use Data::Dump qw/pp/;    # for dev debug
 
 use Carp;
 

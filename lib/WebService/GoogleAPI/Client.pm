@@ -73,7 +73,7 @@ Package includes I<go_auth> CLI Script to collect initial end-user authorisation
 
 =cut
 
-use Data::Dump;
+use Data::Dump qw/pp/;
 use Moo;
 use WebService::GoogleAPI::Client::UserAgent;
 use WebService::GoogleAPI::Client::Discovery;
