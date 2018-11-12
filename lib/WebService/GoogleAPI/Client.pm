@@ -269,26 +269,22 @@ sub api_query
 
       foreach my $meth_param_spec ( keys %{ $method_discovery_struct->{ parameters } } )
       {
+        carp (pp $params) if $self->debug > 10;
         carp("Checking $meth_param_spec") if ($self->{debug}>10);
-        ## set default value if is not provided within $params->{options} - nb technically not required but provides visibility of the params if examining the options when debugging
-        $params->{ options }{ $meth_param_spec } = $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default }
-          if (
-          ( not defined $params->{ options }{ $meth_param_spec } )
-          && ( defined $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default }
-            && $method_discovery_struct->{ parameters }{ $meth_param_spec }{ location } eq 'query' )
-          );
-        ## this looks to be clobbering all options - TODO - review and stop clobbering if already defined
+	#Default values are set inside of conditional later
+	
+	
+	## this looks to be clobbering all options - 
+	#TODO - review and stop clobbering if already defined
 
-        carp( "checking discovery spec'd parameter - $meth_param_spec" ) if $self->debug > 10;
 
         #carp("$meth_param_spec  has a user option value defined") if ( defined $params->{options}{$meth_param_spec} );
-        if ( $params->{ path } =~ /\{.+\}/xms )    ## there are un-interpolated variables in the path - try to fill them for this param if reqd
-        {
-          carp( "$params->{path} includes un-filled variables " ) if $self->debug > 10;
-        carp (Dumper $params) if $self->debug > 10;
-          ## interpolate variables into URI if available and not filled
           if ( $method_discovery_struct->{ parameters }{ $meth_param_spec }{ 'location' } eq 'path' )    ## this is a path variable
+        {
+          ## interpolate variables into URI if available and not filled
+        if ( $params->{ path } =~ /\{.+\}/xms )    ## there are un-interpolated variables in the path - try to fill them for this param if reqd
           {
+	    carp( "$params->{path} includes un-filled variables " ) if $self->debug > 10;
             ## requires interpolations into the URI -- consider && into containing if
             if ( $params->{ path } =~ /\{\+*$meth_param_spec\}/xg )                                         ## eg match {jobId} in 'v1/jobs/{jobId}/reports/{reportId}'
             {
@@ -297,9 +293,6 @@ sub api_query
               {
                 carp( "DEBUG: $meth_param_spec is defined in param->{options}" ) if $self->{debug} > 10;
                 $params->{ path } =~ s/\{\+*$meth_param_spec\}/$params->{options}{$meth_param_spec}/xsmg;
-                ## TODO - possible source of errors in future - do we need to undefine the option here?
-                ## undefining it so that it doesn't break post contents
-                delete $params->{ options }{ $meth_param_spec };
               }
               ## else if not provided as an option but a default value is provided in the spec
               elsif ( defined $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default } )
@@ -316,13 +309,33 @@ sub api_query
         }
         elsif ( $method_discovery_struct->{ parameters }{ $meth_param_spec }{ 'location' } eq 'query' )    ## check post form variables .. assume not get?
         {
+
           if ( !defined $params->{ options }{ $meth_param_spec } )
           {
             $params->{ options }{ $meth_param_spec } = $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default }
               if ( defined $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default } );
           }
 
+	  if ($params->{options}{ $meth_param_spec})
+	  {
+	    #put the query params into the url
+	    if ($params->{path} =~ /\?/) {#check if we've added any query params yet
+	      $params->{path} .= "&$meth_param_spec=$params->{options}{$meth_param_spec}";
+	    } else {
+	      $params->{path} .= "?$meth_param_spec=$params->{options}{$meth_param_spec}";
+	    }
+	  }
+
         }
+
+
+	## undefining it so that it doesn't break post contents
+	#moved undefining here, b/c query params also should be in url
+	delete $params->{ options }{ $meth_param_spec } 
+	    unless $method_discovery_struct->{request}
+	               &&
+	    $method_discovery_struct->{request}{properties}{$meth_param_spec};
+
       }
 
       ## error now if there remain uninterpolated variables in the path ?
