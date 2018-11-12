@@ -21,6 +21,8 @@ version 0.20.1
 
 Provides client access to [Google API V.1](https://developers.google.com/apis-explorer/) Service End-Points using a user-agent that handles OAUTH2 authentication and access control and provides helpers to cache API Discovery specifications.
 
+This module may look 'heavy' and that's because it includes a lot of extra tools to streamline your exploration of Google API End-Points. In a production environment there will be options to trim down your implementation if this is required. 
+
 The guiding principal is to minimise the conceptual load when using the Client agent for users who want to make calls directly, but also make available functions to help explore unfamiliar API endpoints by offering optional validation etc against the latest published Google API Discovery specifications.
 
 

@@ -40,7 +40,7 @@ sub setup
   }
   else
   {
-    croak "Unknown storage type. Allowed types are jsonfile, dbi and mongo";
+    croak "Unknown storage type.";
   }
   return $self;
 }
