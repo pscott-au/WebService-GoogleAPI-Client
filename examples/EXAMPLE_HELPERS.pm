@@ -27,6 +27,7 @@ sub check_api_endpoint_and_user_scopes ## TODO - Doesn't actually do waht it say
 
     ## Construct summary textual display for the endpoint
     my $scopes_txt = join("\n", @{$api_method_details->{scopes}} );
+    $api_method_details->{parameterOrder} = [] unless defined $api_method_details->{parameterOrder}; ## dummy if none
     my $param_order_txt = join(",", @{$api_method_details->{parameterOrder}} );
 
     ## parameters 
