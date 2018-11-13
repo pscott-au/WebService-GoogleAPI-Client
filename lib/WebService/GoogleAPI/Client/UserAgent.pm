@@ -134,7 +134,7 @@ sub build_http_transaction
 
 Google API HTTP 'method' request to API End Point at 'path' with optional parameters described by 'options'
 
-By 'validated' I mean that no checks are performed against dsivoery data structures and no interpolation is performed.
+By 'validated' I mean that no checks are performed against discovery data structures and no interpolation is performed.
 The pre-processing functionality for the library is expected to be completed by the 'Client' class before passing
 the cleaner, sanitised and validated request to the agent here for submitting.
 
@@ -175,8 +175,10 @@ sub validated_api_query
     my $val = $params;
     $params = { path => $val, method => 'get', options => {}, };
   }
- 
-  my $res = $self->start( $self->build_http_transaction( $params ) )->res;
+
+ my $tx =  $self->build_http_transaction( $params );
+ #pp $tx; exit;
+  my $res = $self->start( $tx )->res;
   
   ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction
   
@@ -203,6 +205,7 @@ sub validated_api_query
       }
 
       #$tx  = $self->build_http_transaction( $params );
+      
       $res = $self->start( $self->build_http_transaction( $params ) )->res;               # Mojo::Message::Response
     }
   }

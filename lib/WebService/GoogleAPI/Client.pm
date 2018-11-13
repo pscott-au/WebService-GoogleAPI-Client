@@ -144,7 +144,7 @@ handles user auth token inclusion in request headers and refreshes token if requ
 
 Required params: method, route
 
-Optional params: api_endpoint_id 
+Optional params: api_endpoint_id  cb_method_discovery_modify
 
 $self->access_token must be valid
 
@@ -176,11 +176,28 @@ $self->access_token must be valid
   #print pp $r;
 
 
-  NB: including the version in the API Endpoint Spec is not supported .. yet? eg gmail:v1.users.messages.list .. will always use the latest stable version
-
-
   if the pre-query validation fails then a 418 - I'm a Teapot error response is returned with the 
   body containing the specific description of the errors ( Tea Leaves ;^) ).   
+
+To allow the user to fix discrepencies in the Discovery Specification the cb_method_discovery_modify callback can be used which must accept the 
+method specification as a parameter and must return a (potentially modified) method spec.
+
+eg.
+
+    my $r = $gapi_client->api_query(  api_endpoint_id => "sheets:v4.spreadsheets.values.update",  
+                                    options => { 
+                                      spreadsheetId => '1111111111111111111',
+                                      valueInputOption => 'RAW',
+                                      range => 'Sheet1!A1:A2',
+                                      'values' => [[99],[98]]
+                                    },
+                                    cb_method_discovery_modify => sub { 
+                                      my  $meth_spec  = shift; 
+                                      $meth_spec->{parameters}{valueInputOption}{location} = 'path';
+                                      $meth_spec->{path} = "v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}";
+                                      return $meth_spec;
+                                    }
+                                    );
 
 Returns L<Mojo::Message::Response> object
 
@@ -240,6 +257,13 @@ sub api_query
 
     ## if can get discovery data for google api endpoint then continue to perform detailed checks
     my $method_discovery_struct = $self->extract_method_discovery_detail_from_api_spec( $params->{ api_endpoint_id } );
+
+    ## allow optional user post-processing of method_discovery_struct
+    if ( defined $params->{cb_method_discovery_modify} && ref( $params->{cb_method_discovery_modify} ) eq 'CODE' )
+    {
+      $method_discovery_struct = &{$params->{cb_method_discovery_modify}}($method_discovery_struct);
+    }
+
     if ( keys %{ $method_discovery_struct } > 0 )    ## method discovery struct ok
     {
       ## ensure user has required scope access
