@@ -189,7 +189,7 @@ if ( $config->{do}{'sheets.spreadsheets.values.update'})
                     } ;
 
     my $r = $gapi_client->api_query(  api_endpoint_id => "$versioned_api.spreadsheets.values.update",  
-    #path => 'v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}&responseValueRenderOption=FORMATTED_VALUE',
+    path => 'v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}&responseValueRenderOption=FORMATTED_VALUE',
                                     options => $options,
                                    # cb_method_discovery_modify => sub { 
                                    #   my  $meth_spec  = shift; 
