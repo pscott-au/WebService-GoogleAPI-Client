@@ -21,7 +21,6 @@ my $config = {
   upload  =>  $ARGV[0] || undef,
   file_content => undef, ## will be filled with content of file at path 'upload'
   
-  # parameters_concise => 01, replaced by client->debug
 };
 
 

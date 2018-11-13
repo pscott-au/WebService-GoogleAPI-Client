@@ -270,9 +270,9 @@ FEATURES
       * helper api_query to streamline request composition without
       preventing manual construction if preferred.
 
-      * CLI tool (goauth) with lightweight HTTP server to simplify OAuth2
-      configuration, sccoping, authorization and obtaining access_ and
-      refresh_ tokens from users
+      * CLI tool (goauth) with lightweight Mojo HTTP server to simplify
+      OAuth2 configuration, sccoping, authorization and obtaining access_
+      and refresh_ tokens from users
 
 AUTHOR
 

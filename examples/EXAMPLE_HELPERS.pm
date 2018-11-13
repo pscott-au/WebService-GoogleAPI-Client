@@ -146,7 +146,7 @@ sub display_api_summary_and_return_versioned_api_string
     {
         $api_name = $preferred_api_name;
     }
-    say pp $new_hash->{$api_name}  if $client->{debug}; 
+    say Dumper $new_hash->{$api_name}  if $client->{debug}; 
     
     return $api_name;
 }

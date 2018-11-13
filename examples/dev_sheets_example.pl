@@ -22,7 +22,7 @@ use Text::Table;
 require './EXAMPLE_HELPERS.pm'; ## check_api_endpoint_and_user_scopes() and display_api_summary_and_return_versioned_api_string()
 
 my $config = {
-  api => 'sheets',
+  api => 'sheets', # sheets:v4
   debug => 01,
   sheet_id => $ENV{GOOGLE_SHEET_ID} || $ARGV[0], #  @ARGV[0] - The sheet ID can be obtained using the Drive API or you can copy the ID from the URL if open sheet in browser
   sheet_update_range => 'Sheet1!A1:A2',
@@ -108,13 +108,6 @@ assumes gapi.json configuration in working directory with scoped project and use
 	sheets:v4.spreadsheets.values.get
 	sheets:v4.spreadsheets.values.update
 
-=head2 GOALS
-
-  - show summary details pulled from discovery docs 
-  - show all methods in HTML table with description including code snippets for worked examples
-  - describe helper functions the simplify data handling
-  - inform improvements to core Modules ( param parsing / validation / feature evolution etc )
-  - idenitfy opportunities for use in full working applications 
 
 =head2 LIST ALL SHEETS
 
@@ -181,7 +174,7 @@ if ( $config->{do}{'sheets.spreadsheets.values.update'})
 
     ####
     ####
-    ####            EXECUTE API - drive.about.get
+    ####            EXECUTE API - sheets.spreadsheets.values.update
     ####
     ####
 
@@ -189,21 +182,33 @@ if ( $config->{do}{'sheets.spreadsheets.values.update'})
                             spreadsheetId => $config->{sheet_id},
                             valueInputOption => 'RAW',
                             range => $config->{sheet_update_range},
-                            #majorDimension => 'ROWS',
-                            'values' => [[99],[98]]
+                            majorDimension => 'ROWS',
+                            'values' => [[99],[98]],
+                            #responseValueRenderOption => 'FORMATTED_VALUE',
+                            
                     } ;
 
     my $r = $gapi_client->api_query(  api_endpoint_id => "$versioned_api.spreadsheets.values.update",  
+    #path => 'v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}&responseValueRenderOption=FORMATTED_VALUE',
                                     options => $options,
-                                    cb_method_discovery_modify => sub { 
-                                      my  $meth_spec  = shift; 
-                                      $meth_spec->{parameters}{valueInputOption}{location} = 'path';
-                                      $meth_spec->{path} = "v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}";
-                                      return $meth_spec;
-                                    }
+                                   # cb_method_discovery_modify => sub { 
+                                   #   my  $meth_spec  = shift; 
+                                   #   $meth_spec->{parameters}{valueInputOption}{location} = 'path';
+                                   #   $meth_spec->{path} = "v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}";
+                                   #   return $meth_spec;
+                                   # }
                                     );
     print dd  $r->json; # ->json;
     ############################################################################
 }
 
 
+=head2 SEE ALSO
+
+=over 2
+
+=item Net::Google::Spreadsheets::V4
+
+=back
+
+=cut

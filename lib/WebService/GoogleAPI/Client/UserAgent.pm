@@ -13,7 +13,7 @@ use WebService::GoogleAPI::Client::AuthStorage;
 use Mojo::UserAgent;
 use Data::Dump qw/pp/;    # for dev debug
 
-use Carp;
+use Carp qw/croak carp cluck/;
 
 has 'do_autorefresh'                => ( is => 'rw', default => 1 );    # if 1 storage must be configured
 has 'auto_update_tokens_in_storage' => ( is => 'rw', default => 1 );
@@ -54,14 +54,14 @@ sub header_with_bearer_auth_token
 
   $headers->{ 'Accept-Encoding' } = 'gzip';
 
-  # carp "header_with_bearer_auth_token: ".$self->access_token;
+  # cluck "header_with_bearer_auth_token: ".$self->access_token;
   if ( $self->access_token )
   {
     $headers->{ 'Authorization' } = 'Bearer ' . $self->access_token;
   }
   else
   {
-    carp 'No access_token, can\'t build Auth header';
+    cluck 'No access_token, can\'t build Auth header';
   }
   return $headers;
 }
@@ -88,13 +88,13 @@ sub build_http_transaction
 
   my $http_method   = uc( $params->{ httpMethod } ) || 'GET';                                                          # uppercase ?
   my $optional_data = $params->{ options }          || '';
-  my $path          = $params->{ path }             || carp( 'path parameter required for build_http_transaction' );
+  my $path          = $params->{ path }             || cluck( 'path parameter required for build_http_transaction' );
   my $no_auth       = $params->{ no_auth }          || 0;  ## default to including auth header - ie not setting no_auth
   my $headers       = $params->{ headers}           || {};
 
-  carp 'Attention! You are using POST, but no payload specified' if ( ( $http_method eq 'POST' ) && !defined $optional_data );
-  carp "build_http_transaction:: $http_method $path " if $self->debug;
-  carp "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . pp $params unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
+  cluck 'Attention! You are using POST, but no payload specified' if ( ( $http_method eq 'POST' ) && !defined $optional_data );
+  cluck "build_http_transaction:: $http_method $path " if ($self->debug > 11);
+  cluck "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . pp $params unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
 
   ## NB - headers not passed if no_auth 
   $headers = $self->header_with_bearer_auth_token( $headers ) unless $no_auth;
@@ -171,13 +171,14 @@ sub validated_api_query
 
   if ( ref( $params ) eq '' )    ## assume is a GET for the URI at $params
   {
-    carp( "transcribing $params to a hashref for validated_api_query" ) if $self->debug;
+    cluck( "transcribing $params to a hashref for validated_api_query" ) if $self->debug;
     my $val = $params;
     $params = { path => $val, method => 'get', options => {}, };
   }
 
  my $tx =  $self->build_http_transaction( $params );
- #pp $tx; exit;
+ 
+ cluck("$params->{method} $params->{path}") if $self->debug;
   my $res = $self->start( $tx )->res;
   
   ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction
@@ -190,13 +191,13 @@ sub validated_api_query
     if ( $res->code == 401 )     ## redundant - was there something else in mind ?
     {
       croak "No user specified, so cant find refresh token and update access_token" unless $self->user;
-      carp "401 response - access_token was expired. Attemptimg to update it automatically ..." if $self->debug;
+      cluck "401 response - access_token was expired. Attemptimg to update it automatically ..." if  ($self->debug > 11);
 
-      # carp "Seems like access_token was expired. Attemptimg update it automatically ..." if $self->debug;
+      # cluck "Seems like access_token was expired. Attemptimg update it automatically ..." if $self->debug;
 
       my $cred      = $self->auth_storage->get_credentials_for_refresh( $self->user );    # get client_id, client_secret and refresh_token
       my $new_token = $self->refresh_access_token( $cred )->{ access_token };             # here also {id_token} etc
-      carp "validated_api_query() Got a new token: " . $new_token if $self->debug;
+      cluck "validated_api_query() Got a new token: " . $new_token if ($self->debug > 11);
       $self->access_token( $new_token );
 
       if ( $self->auto_update_tokens_in_storage )
@@ -211,13 +212,13 @@ sub validated_api_query
   }
   elsif ( $res->code == 403 )
   {
-    carp( 'Unexpected permission denied 403 error ' );
+    cluck( 'Unexpected permission denied 403 error ' );
     return $res;
   }
   return $res if $res->code == 200;
   return $res if $res->code == 204;                                                       ## NO CONTENT - INDICATES OK FOR DELETE ETC
   return $res if $res->code == 400;                                                       ## general failure
-  carp( "unhandled validated_api_query response code " . $res->code );
+  cluck( "unhandled validated_api_query response code " . $res->code );
   return $res;
 }
 
@@ -254,7 +255,7 @@ sub refresh_access_token
     croak "Not enough credentials to refresh access_token. Check that you provided client_id, client_secret and refresh_token";
   }
 
-  carp "refresh_access_token:: Attempt to refresh access_token " if $self->debug;
+  cluck "refresh_access_token:: Attempt to refresh access_token " if ($self->debug > 11);
   $credentials->{ grant_type } = 'refresh_token';
   return $self->post( 'https://www.googleapis.com/oauth2/v4/token' => form => $credentials )->res->json || croak( 'refresh_access_token failed' );    # tokens
 }
