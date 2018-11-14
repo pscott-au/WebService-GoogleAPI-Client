@@ -4,7 +4,7 @@ NAME
 
 VERSION
 
-    version 0.20.1
+    version 0.21
 
 SYNOPSIS
 
@@ -124,6 +124,13 @@ METHODS
     
       if the pre-query validation fails then a 418 - I'm a Teapot error response is returned with the 
       body containing the specific description of the errors ( Tea Leaves ;^) ).   
+
+    NB: If you pass a 'path' parameter this takes precendence over the API
+    Discovery Spec. Any parameters defined in the path of the format
+    {VARNAME} will be filled in with values within the options=>{ VARNAME
+    => 'value '} parameter structure. This is the simplest way of
+    addressing issues where the API discovery spec is inaccurate. ( See
+    dev_sheets_example.pl as at 14/11/18 for illustration )
 
     To allow the user to fix discrepencies in the Discovery Specification
     the cb_method_discovery_modify callback can be used which must accept

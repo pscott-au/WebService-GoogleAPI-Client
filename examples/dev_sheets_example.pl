@@ -184,19 +184,20 @@ if ( $config->{do}{'sheets.spreadsheets.values.update'})
                             range => $config->{sheet_update_range},
                             majorDimension => 'ROWS',
                             'values' => [[99],[98]],
-                            #responseValueRenderOption => 'FORMATTED_VALUE',
+                           responseValueRenderOption => 'FORMATTED_VALUE',
+                           includeValuesInResponse => 'true'
                             
                     } ;
 
     my $r = $gapi_client->api_query(  api_endpoint_id => "$versioned_api.spreadsheets.values.update",  
-    path => 'v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}&responseValueRenderOption=FORMATTED_VALUE',
+    #path => 'v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}&responseValueRenderOption=FORMATTED_VALUE',
                                     options => $options,
-                                   # cb_method_discovery_modify => sub { 
-                                   #   my  $meth_spec  = shift; 
-                                   #   $meth_spec->{parameters}{valueInputOption}{location} = 'path';
-                                   #   $meth_spec->{path} = "v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}";
-                                   #   return $meth_spec;
-                                   # }
+                            #        cb_method_discovery_modify => sub { 
+                            #          my  $meth_spec  = shift; 
+                            #          $meth_spec->{parameters}{valueInputOption}{location} = 'path';
+                            #          $meth_spec->{path} = "v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}";
+                            #          return $meth_spec;
+                            #        }
                                     );
     print dd  $r->json; # ->json;
     ############################################################################

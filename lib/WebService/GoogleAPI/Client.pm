@@ -311,7 +311,7 @@ sub _process_params_for_api_endpoint_and_return_errors
   $params->{ path } = $method_discovery_struct->{ path } unless $params->{ path }; ## Set default path iff not set by user - NB - will prepend baseUrl later
   push @teapot_errors, 'path is a required parameter'    unless $params->{ path };
 
-  push @teapot_errors, $self->_interpolate_path_parameters_and_return_errors( $params, $method_discovery_struct );
+  push @teapot_errors, $self->_interpolate_path_parameters_append_query_params_and_return_errors( $params, $method_discovery_struct );
   
   $params->{ path } =~ s/^\///sxmg;    ## remove leading '/'  from path  
   $params->{ path } = "$api_discovery_struct->{baseUrl}/$params->{path}" unless $params->{ path } =~ /^$api_discovery_struct->{baseUrl}/ixsmg; ## prepend baseUrl if required
@@ -325,12 +325,12 @@ sub _process_params_for_api_endpoint_and_return_errors
 
 
 ##################################################
-sub _interpolate_path_parameters_and_return_errors
+sub _interpolate_path_parameters_append_query_params_and_return_errors
 {
   my ( $self, $params, $method_discovery_struct ) = @_;
   my @teapot_errors = ();
 
-  
+  my @get_query_params = ();
   my %path_params = map { $_ => 1 } ($params->{path} =~ /\{\+*([^\}]+)\}/xg); ## the params embedded in the path as indexes of hash
 
   foreach my $meth_param_spec ( uniq(keys %path_params ,keys %{ $method_discovery_struct->{ parameters } } ) )
@@ -367,11 +367,20 @@ sub _interpolate_path_parameters_and_return_errors
         }
       }
     }
-    elsif (  ( !defined $params->{ options }{ $meth_param_spec } ) && ( $method_discovery_struct->{ parameters }{ $meth_param_spec }{ 'location' } eq 'query' ))    ## check post form variables .. assume not get?
+    elsif (  ( defined $params->{ options }{ $meth_param_spec } ) && ( $method_discovery_struct->{ parameters }{ $meth_param_spec }{ 'location' } eq 'query' ))    ## check post form variables .. assume not get?
     {
         $params->{ options }{ $meth_param_spec } = $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default } if ( defined $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default } );
+        push( @get_query_params,  "$meth_param_spec=$params->{options}{$meth_param_spec}"   ) if defined $params->{ options }{ $meth_param_spec };
+        delete $params->{ options }{ $meth_param_spec };
     }
   }
+  if ( scalar(@get_query_params)>0 )
+  {
+    #$params->{path} .= '/' unless $params->{path} =~ /\/$/mx;
+    $params->{path} .= '?' . join('&', @get_query_params );
+  }
+  #print pp $params;
+  #exit;
   return @teapot_errors;
 }
 ##################################################
