@@ -5,7 +5,7 @@ WebService::GoogleAPI::Client - Perl Google API Services OAUTH Client.
 [![Build Status](https://travis-ci.org/pscott-au/WebService-GoogleAPI-Client.svg?branch=master)](https://travis-ci.org/pscott-au/WebService-GoogleAPI-Client)
 [![Coverage Status](https://coveralls.io/repos/github/pscott-au/WebService-GoogleAPI-Client/badge.svg?branch=master)](https://coveralls.io/github/pscott-au/WebService-GoogleAPI-Client?branch=master)
 [![CPAN Version](https://img.shields.io/cpan/v/WebService-GoogleAPI-Client.svg)](http://search.cpan.org/~localshop/WebService-GoogleAPI-Client/lib/WebService/GoogleAPI/Client.pm)
-
+[![Kwalitee Score](https://cpants.cpanauthors.org/dist/WebService-GoogleAPI-Client.svg)](https://cpants.cpanauthors.org/dist/WebService-GoogleAPI-Client)
 
 ![Perl Google APIs Client Library](https://pscott-au.github.io/WebService-GoogleAPI-Client/perl-google-apis-client-library.png)
 
@@ -15,7 +15,7 @@ WebService::GoogleAPI::Client - Perl Google API Services OAUTH Client.
 
 # VERSION
 
-version 0.20.1
+version 0.21
 
 # SYNOPSIS
 

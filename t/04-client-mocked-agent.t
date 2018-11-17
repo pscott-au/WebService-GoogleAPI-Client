@@ -77,7 +77,7 @@ $client->user( $user );
               });
 
 
-    ok( my $cl = $client->api_query( api_endpoint_id => 'gmail.users.messages.list'  ), 'api_query - "gmail.users.messages.list"');
+    ok(  $client->api_query( api_endpoint_id => 'gmail.users.messages.list'  ), 'api_query - "gmail.users.messages.list"'); 
     ok (  $client->extract_method_discovery_detail_from_api_spec(  'gmail.users.messages.list', 'v1' ), 'extract_method_discovery_detail_from_api_spec');
     ok ( $client->ua->header_with_bearer_auth_token(), 'header_with_bearer_auth_token' );
     ok( my $cred      = $client->ua->auth_storage->get_credentials_for_refresh( $user ), 'get credentials'); 
