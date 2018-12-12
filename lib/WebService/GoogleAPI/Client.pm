@@ -9,8 +9,10 @@ use WebService::GoogleAPI::Client::UserAgent;
 use WebService::GoogleAPI::Client::Discovery;
 use Carp;
 use CHI;
-use List::MoreUtils qw(uniq);
+use Mojo::Util;
 
+#TODO- batch requests. The only thing necessary is to send  a
+#multipart request as I wrote in that e-mail.
 
 # ABSTRACT: Google API Discovery and SDK
 
@@ -327,58 +329,100 @@ sub _process_params_for_api_endpoint_and_return_errors
 ##################################################
 sub _interpolate_path_parameters_append_query_params_and_return_errors
 {
-  my ( $self, $params, $method_discovery_struct ) = @_;
+  my ( $self, $params, $discovery_struct ) = @_;
   my @teapot_errors = ();
 
   my @get_query_params = ();
-  my %path_params = map { $_ => 1 } ($params->{path} =~ /\{\+*([^\}]+)\}/xg); ## the params embedded in the path as indexes of hash
 
-  foreach my $meth_param_spec ( uniq(keys %path_params ,keys %{ $method_discovery_struct->{ parameters } } ) )
-  {
-    if ( (defined $path_params{ $meth_param_spec } ) && (defined  $params->{ options }{ $meth_param_spec } ) ) ## if param option is in the path then interpolate and forget
-    {
-      $params->{ path } =~ s/\{\+*$meth_param_spec\}/$params->{options}{$meth_param_spec}/xsmg;
-      delete $params->{ options }{ $meth_param_spec }; ## if a GET param should not also be a BODY param
+  #create a hash of whatever the expected params may be
+  my %path_params; my $param_regex = qr/\{ \+? ([^\}]+) \}/x;
+  if ($params->{path} ne $discovery_struct->{path}) {
+    #check if the path was given as a custom path. If it is, just
+    #interpolate things directly, and assume the user is responsible
+    %path_params = map { $_ => 'custom' } ($params->{path} =~ /$param_regex/xg); 
+  } else {
+    #label which param names are from the normal path and from the
+    #flat path
+    %path_params = map { $_ => 'plain' } ($discovery_struct->{path} =~ /$param_regex/xg);
+    if ($discovery_struct->{flatPath}) {
+      %path_params = (%path_params, 
+	map { $_ => 'flat' } ($discovery_struct->{flatPath} =~ /$param_regex/xg) )
     }
-    elsif ( $method_discovery_struct->{ parameters }{ $meth_param_spec }{ 'location' } eq 'path' )    ## this is a path variable
-    {
-      ## interpolate variables into URI if available and not filled
-      if ( $params->{ path } =~ /\{.+\}/xms )    ## there are un-interpolated variables in the path - try to fill them for this param if reqd
-      {
-        #carp( "$params->{path} includes un-filled variables " ) if $self->debug > 10;
-        ## requires interpolations into the URI -- consider && into containing if
-        if ( $params->{ path } =~ /\{\+*$meth_param_spec\}/xg )                                         ## eg match {jobId} or {+jobId} in 'v1/jobs/{jobId}/reports/{reportId}'
-        {
-          ## if provided as an option
-          if ( defined $params->{ options }{ $meth_param_spec } )
-          {
-            carp( "DEBUG: $meth_param_spec is defined in param->{options}" ) if $self->{debug} > 10;
-            $params->{ path } =~ s/\{\+*$meth_param_spec\}/$params->{options}{$meth_param_spec}/xsmg;
-            delete $params->{ options }{ $meth_param_spec }; ## if a GET param should not also be a BODY param
-          }
-          elsif ( defined $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default } ) ## not provided as an option but a default value is provided in the spec - should be assumed by server so could probbaly remove this
-          {
-            $params->{ path } =~ s/\{\+*$meth_param_spec\}/$method_discovery_struct->{parameters}{$meth_param_spec}{default}/xsmg;
-          }
-          else    ## otherwise flag as an error - unable to interpolate
-          {
-            push( @teapot_errors, "$params->{path} requires interpolation value for $meth_param_spec but none provided as option and no default value provided by specification" );
-          }
-        }
+  }
+
+
+  #small subs to convert between these_types to theseTypes of params
+  sub camel { $_[0] =~ s/ _(\w) /\u$1/grx };
+  sub snake { $_[0] =~ s/([[:upper:]])/_\l$1/grx };
+
+  #switch the path we're dealing with to the flat path if any of
+  #the parameters match the flat path
+  $params->{path} = $discovery_struct->{flatPath} 
+    if grep { $_ eq 'flat' } map {$path_params{camel $_} || ()} keys %{ $params->{options} };
+
+
+  #loop through params given, placing them in the path or query,
+  #or leaving them for the request body
+  for my $param_name ( keys %{ $params->{options} } ) {
+
+    #first check if it needs to be interpolated into the path
+    if ($path_params{$param_name}) { 
+      #pull out the value from the hash, and remove the key
+      my $param_value = delete $params->{options}{$param_name};
+      
+      #camelize the param name if not passed in customly, allowing
+      #the user to pass in camelCase or snake_case param names
+      $param_name = camel $param_name if $path_params{$param_name} ne 'custom';
+
+      #first deal with any param that doesn't have a plus, b/c
+      #those just get interpolated
+      $params->{path} =~ s/\{$param_name\}/$param_value/;
+
+      #if there's a plus in the path spec, we need more work
+      if ($params->{path} =~ /\{ \+ $param_name \}/x) {
+	my $pattern = $discovery_struct->{parameters}{$param_name}{pattern};
+	#if the given param matches google's pattern for the
+	#param, just interpolate it straight
+	if ($param_value =~ /$pattern/) {
+	  $params->{path} =~ s/\{\+$param_name\}/$param_value/;
+	} else {
+	  #N.B. perhaps support passing an arrayref or csv for those
+	  #params such as jobs.projects.jobs.delete which have two
+	  #dynamic parts. But for now, unnecessary
+	  #remove the regexy parts of the pattern to interpolate it
+	  #into the path, assuming the user has provided just the
+	  #dynamic portion of the param. 
+	  $pattern =~ s/\^ \$//gx;
+	  $params->{path} =~ s/\{\+$param_name\}/$pattern/x;
+	  $params->{path} =~ s/\[ \^ \/ \]/$param_value/x;
+	}
       }
+      #skip to the next run, so I don't need an else clause later
+      next; #I don't like nested if-elses
     }
-    elsif (  ( defined $params->{ options }{ $meth_param_spec } ) && ( $method_discovery_struct->{ parameters }{ $meth_param_spec }{ 'location' } eq 'query' ))    ## check post form variables .. assume not get?
-    {
-        $params->{ options }{ $meth_param_spec } = $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default } if ( defined $method_discovery_struct->{ parameters }{ $meth_param_spec }{ default } );
-        push( @get_query_params,  "$meth_param_spec=$params->{options}{$meth_param_spec}"   ) if defined $params->{ options }{ $meth_param_spec };
-        delete $params->{ options }{ $meth_param_spec };
-    }
+    #if it's not in the list of params, then it goes in the
+    #request body, and our work here is done
+    next unless $discovery_struct->{parameters}{$param_name};
+
+    #it must be a GET type query param, so push the name and value
+    #on our param stack and take it off of the options list
+    push @get_query_params,  $param_name, delete $params->{options}{$param_name};  
   }
-  if ( scalar(@get_query_params)>0 )
-  {
-    #$params->{path} .= '/' unless $params->{path} =~ /\/$/mx;
-    $params->{path} .= '?' . join('&', @get_query_params );
+
+  #if there are any query params...
+  if ( @get_query_params ) {
+    #interpolate and escape the get query params built up in our
+    #former for loop
+    $params->{path} .= '?' . Mojo::Parameters->new(@get_query_params);
   }
+
+  #interpolate default value for path params if not given. Needed
+  #for things like the gmail API, where userID is 'me' by default
+  for my $param_name ( $params->{path} =~ /$param_regex/g ) {
+    my $param_value = $discovery_struct->{parameters}{$param_name}{default};
+    $params->{path} =~ s/\{$param_name\}/$param_value/ if $param_value;
+  }
+
   #print pp $params;
   #exit;
   return @teapot_errors;
