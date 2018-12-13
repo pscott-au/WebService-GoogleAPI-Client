@@ -392,6 +392,9 @@ sub _process_params_for_api_endpoint_and_return_errors
 }
 ##################################################
 
+#small subs to convert between these_types to theseTypes of params
+sub camel { shift if @_ > 1; $_[0] =~ s/ _(\w) /\u$1/grx };
+sub snake { shift if @_ > 1; $_[0] =~ s/([[:upper:]])/_\l$1/grx };
 
 ##################################################
 sub _interpolate_path_parameters_append_query_params_and_return_errors
@@ -418,9 +421,6 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
   }
 
 
-  #small subs to convert between these_types to theseTypes of params
-  sub camel { $_[0] =~ s/ _(\w) /\u$1/grx };
-  sub snake { $_[0] =~ s/([[:upper:]])/_\l$1/grx };
 
   #switch the path we're dealing with to the flat path if any of
   #the parameters match the flat path
