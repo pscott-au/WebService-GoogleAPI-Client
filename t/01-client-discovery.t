@@ -18,7 +18,7 @@ use Cwd;
 use CHI;
 
 my $dir   = getcwd;
-my $DEBUG = 0;        ## to see noise of class debugging
+my $DEBUG = $ENV{GAPI_DEBUG_LEVEL} || 0; ## to see noise of class debugging
 
 
 use_ok( 'WebService::GoogleAPI::Client' );    #  || print "Bail out!\n";

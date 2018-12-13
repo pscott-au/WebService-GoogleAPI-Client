@@ -18,7 +18,7 @@ use Cwd;
 my $dir = getcwd;
 
 # plan tests => 1; ## or at end  done_test();
-my $DEBUG = 0;
+my $DEBUG = $ENV{GAPI_DEBUG_LEVEL} || 0;
 
 #BEGIN {
 

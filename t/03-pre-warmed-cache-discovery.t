@@ -24,7 +24,7 @@ use JSON;
 #use CHI::Driver::TEST_MOCKED;
 
 my $dir   = getcwd;
-my $DEBUG = 1;        ## to see noise of class debugging
+my $DEBUG = $ENV{GAPI_DEBUG_LEVEL} || 0;        ## to see noise of class debugging
 my $warm_hash = {}; 
 #$warm_hash->{'https://www.googleapis.com/discovery/v1/apis'} = 'foo';
 #print Dumper $hash;
@@ -48,9 +48,14 @@ ok( my $disc = WebService::GoogleAPI::Client::Discovery->new( chi=>$chi, debug=>
         return $res;
         });
     
-    ok( my $all = $disc->discover_all(), 'discover_all()' );
+    #stop that annoying cluck from trying to get the auth header
+    #for our fake request
+    my $cluck = Sub::Override->new('WebService::GoogleAPI::Client::UserAgent::cluck',
+      sub { } );
 
-    ## INJECT HTTP RESPONSE FOR GAMIL V1 API SPECIFICATION
+      ok( my $all = $disc->discover_all(), 'discover_all()' );
+
+    ## INJECT HTTP RESPONSE FOR GMAIL V1 API SPECIFICATION
     my $override2 = Sub::Override->new('Mojo::Transaction::res', 
                                 sub {
                                         my $res2 =  Mojo::Message::Response->new ;
@@ -60,8 +65,9 @@ ok( my $disc = WebService::GoogleAPI::Client::Discovery->new( chi=>$chi, debug=>
                                     });
 
 
-    ok( my $gmail_api_spec = $disc->methods_available_for_google_api_id('gmail', 'v1'), 'Get available methods for Gmail V1');
+      ok( my $gmail_api_spec = $disc->methods_available_for_google_api_id('gmail', 'v1'), 'Get available methods for Gmail V1');
  
+      $cluck->restore;
 
     
     my $override3 = Sub::Override->new('Mojo::Transaction::res', 

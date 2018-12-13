@@ -147,7 +147,7 @@ handles user auth token inclusion in request headers and refreshes token if requ
 
 Required params: method, route
 
-Optional params: api_endpoint_id  cb_method_discovery_modify
+Optional params: api_endpoint_id  cb_method_discovery_modify, options
 
 $self->access_token must be valid
 
@@ -166,45 +166,112 @@ $self->access_token must be valid
   ## if provide the Google API Endpoint to inform pre-query validation
   say $gapi_agent->api_query(
       api_endpoint_id => 'gmail.users.messages.send',
-      options    => { raw => encode_base64( 
-                                            Email::Simple->create( header => [To => $user, From => $user, Subject =>"Test email from $user",], 
-                                                                    body   => "This is the body of email from $user to $user", )->as_string 
-                                          ), 
-                    },
-  )->to_string; ##
+      options    => 
+          { raw => encode_base64( Email::Simple->create( 
+                       header => [To => $user, From => $user, 
+                                  Subject =>"Test email from $user",], 
+		       body   => "This is the body of email from $user to $user", 
+                   )->as_string ), 
+          },
+      )->to_string; ##
 
   print  $gapi_agent->api_query(
-            api_endpoint_id => 'gmail.users.messages.list', ## auto sets method to GET, path to 'https://www.googleapis.com/calendar'
+            api_endpoint_id => 'gmail.users.messages.list', 
+            ## auto sets method to GET, and the path to 
+	    ## 'https://www.googleapis.com/gmail/v1/users/me/messages'
           )->to_string;
-  #print pp $r;
 
+If the pre-query validation fails then a 418 - I'm a Teapot error response is 
+returned with the body containing the specific description of the 
+errors ( Tea Leaves ;^) ).   
 
-  if the pre-query validation fails then a 418 - I'm a Teapot error response is returned with the 
-  body containing the specific description of the errors ( Tea Leaves ;^) ).   
+=head3 Dealing with inconsistencies
 
-NB: If you pass a 'path' parameter this takes precendence over the API Discovery Spec. Any parameters defined in the path of the format {VARNAME} will be
-    filled in with values within the options=>{ VARNAME => 'value '} parameter structure. This is the simplest way of addressing issues where the API 
-    discovery spec is inaccurate. ( See dev_sheets_example.pl as at 14/11/18 for illustration )
+NB: If you pass a 'path' parameter this takes precendence over the
+API Discovery Spec.  Any parameters defined in the path of the
+format {VARNAME} will be filled in with values within the
+options=>{ VARNAME => 'value '} parameter structure. This is the
+simplest way of addressing issues where the API discovery spec is
+inaccurate. ( See dev_sheets_example.pl as at 14/11/18 for
+illustration ). This particular issue has been since solved, but
+you never know where else there are problems with the discovery spec.
 
-To allow the user to fix discrepencies in the Discovery Specification the cb_method_discovery_modify callback can be used which must accept the 
-method specification as a parameter and must return a (potentially modified) method spec.
+Sometimes, Google is slightly inconsistent about how to name the parameters. For example,
+error messages sent back to the user tend to have the param names in snake_case, whereas
+the discovery document always has them in camelCase. To address this issue, and in
+the DWIM spirit of perl, parameters may be passed in camelCase or snake_case. That
+means that 
+
+    $gapi_agent->api_query(
+        api_endpoint_id => 'gmail.users.messages.list',
+        options => { userId => 'foobar' });
+
+and
+
+    $gapi_agent->api_query(
+        api_endpoint_id => 'gmail.users.messages.list',
+        options => { user_id => 'foobar' });
+
+will produce the same result.
+
+Sometimes a param expects a dynamic part and a static part. The endpoint
+jobs.projects.jobs.list, for example, has a param called 'parent' which has a 
+format '^projects/[^/]+$'. In cases like this, you can just skip out the constant 
+part, making
+
+  $gapi_agent->api_query( api_endpoint_id => 'jobs.projects.jobs.list',
+    options => { parent => 'sner' } );
+
+and
+
+  $gapi_agent->api_query( api_endpoint_id => 'jobs.projects.jobs.list',
+    options => { parent => 'projects/sner' } );
+
+the same. How's that for DWIM?
+
+In addition, you can use different names to refer to multi-part
+parameters. For example, the endpoint jobs.projects.jobs.delete officially
+expects one parameter, 'name'. The description for the param tells you
+that you it expects it to contain 'projectsId' and 'jobsId'. For cases like this,
+
+  $gapi_agent->api_query( api_endpoint_id => 'jobs.projects.jobs.delete',
+    options => {name => 'projects/sner/jobs/bler'} );
+
+and
+
+  $gapi_agent->api_query( api_endpoint_id => 'jobs.projects.jobs.delete',
+    options => {projectsId => 'sner', jobsId => 'bler'} );
+
+will produce the same result. Note that for now, in this case you can't pass
+the official param name without the constant parts. That may change in the
+future.
+
+To further fix discrepencies in the Discovery Specification, the
+cb_method_discovery_modify callback can be used which must accept
+the method specification as a parameter and must return a
+(potentially modified) method spec.
 
 eg.
 
-    my $r = $gapi_client->api_query(  api_endpoint_id => "sheets:v4.spreadsheets.values.update",  
-                                    options => { 
-                                      spreadsheetId => '1111111111111111111',
-                                      valueInputOption => 'RAW',
-                                      range => 'Sheet1!A1:A2',
-                                      'values' => [[99],[98]]
-                                    },
-                                    cb_method_discovery_modify => sub { 
-                                      my  $meth_spec  = shift; 
-                                      $meth_spec->{parameters}{valueInputOption}{location} = 'path';
-                                      $meth_spec->{path} = "v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}";
-                                      return $meth_spec;
-                                    }
-                                    );
+    my $r = $gapi_client->api_query(  
+                api_endpoint_id => "sheets:v4.spreadsheets.values.update",  
+                options => { 
+		   spreadsheetId => '1111111111111111111',
+                   valueInputOption => 'RAW',
+                   range => 'Sheet1!A1:A2',
+                   'values' => [[99],[98]]
+                },
+                cb_method_discovery_modify => sub { 
+                   my  $meth_spec  = shift; 
+                   $meth_spec->{parameters}{valueInputOption}{location} = 'path';
+                   $meth_spec->{path} = join '',
+                      "v4/spreadsheets/{spreadsheetId}/values/{range}',
+                      "?valueInputOption={valueInputOption}";
+                   return $meth_spec;
+                 }
+            );
+
+Again, this specific issue has been fixed.
 
 Returns L<Mojo::Message::Response> object
 
@@ -319,7 +386,7 @@ sub _process_params_for_api_endpoint_and_return_errors
   $params->{ path } = "$api_discovery_struct->{baseUrl}/$params->{path}" unless $params->{ path } =~ /^$api_discovery_struct->{baseUrl}/ixsmg; ## prepend baseUrl if required
 
   ## if errors - add detail available in the discovery struct for the method and service to aid debugging
-  push (@teapot_errors, qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_discovery_struct->{ownerName} $api_discovery_struct->{canonicalName} $api_discovery_struct->{version} with id $method_discovery_struct->{id} as described by discovery document version $method_discovery_struct->{discoveryVersion} revision $method_discovery_struct->{revision} with documentation at $api_discovery_struct->{documentationLink} \nDescription $api_discovery_struct->{description}\n} ) if ( @teapot_errors );
+  push @teapot_errors, qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_discovery_struct->{ownerName} $api_discovery_struct->{canonicalName} $api_discovery_struct->{version} with id $method_discovery_struct->{id} as described by discovery document version $api_discovery_struct->{discoveryVersion} revision $api_discovery_struct->{revision} with documentation at $api_discovery_struct->{documentationLink} \nDescription: $method_discovery_struct->{description}\n}  if @teapot_errors;
 
   return @teapot_errors;
 }
@@ -366,13 +433,15 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
   for my $param_name ( keys %{ $params->{options} } ) {
 
     #first check if it needs to be interpolated into the path
-    if ($path_params{$param_name}) { 
+    if ($path_params{$param_name} || $path_params{camel $param_name}) { 
       #pull out the value from the hash, and remove the key
       my $param_value = delete $params->{options}{$param_name};
       
-      #camelize the param name if not passed in customly, allowing
-      #the user to pass in camelCase or snake_case param names
-      $param_name = camel $param_name if $path_params{$param_name} ne 'custom';
+      #Camelize the param name if not passed in customly, allowing
+      #the user to pass in camelCase or snake_case param names.
+      #This implictly allows for a non camelCased param to be left
+      #alone in a custom param.
+      $param_name = camel $param_name if $path_params{camel $param_name};
 
       #first deal with any param that doesn't have a plus, b/c
       #those just get interpolated
@@ -392,9 +461,11 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
 	  #remove the regexy parts of the pattern to interpolate it
 	  #into the path, assuming the user has provided just the
 	  #dynamic portion of the param. 
-	  $pattern =~ s/\^ \$//gx;
+	  $pattern =~ s/^\^ | \$$//gx; my $placeholder = qr/ \[ \^ \/ \] \+ /x;
 	  $params->{path} =~ s/\{\+$param_name\}/$pattern/x;
-	  $params->{path} =~ s/\[ \^ \/ \]/$param_value/x;
+	  $params->{path} =~ s/$placeholder/$param_value/x;
+	  push @teapot_errors, "Not enough parameters given for {+$param_name}."
+	    if $params->{path} =~ /$placeholder/;
 	}
       }
       #skip to the next run, so I don't need an else clause later
@@ -422,6 +493,8 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
     my $param_value = $discovery_struct->{parameters}{$param_name}{default};
     $params->{path} =~ s/\{$param_name\}/$param_value/ if $param_value;
   }
+  push @teapot_errors, "Missing a parameter for {$_}." 
+    for $params->{path} =~ /$param_regex/g;
 
   #print pp $params;
   #exit;

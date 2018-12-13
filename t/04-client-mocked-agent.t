@@ -24,7 +24,7 @@ use Sub::Override;
 
 
 my $dir   = getcwd;
-my $DEBUG = 1;        ## to see noise of class debugging
+my $DEBUG = $ENV{GAPI_DEBUG_LEVEL} || 0;        ## to see noise of class debugging
 my $warm_hash = {}; 
 #$warm_hash->{'https://www.googleapis.com/discovery/v1/apis'} = 'foo';
 #print Dumper $hash;
