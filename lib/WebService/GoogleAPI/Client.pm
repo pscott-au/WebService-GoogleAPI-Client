@@ -60,12 +60,12 @@ Package includes I<go_auth> CLI Script to collect initial end-user authorisation
     my $my_email_address = 'peter@shotgundriver.com'
 
 
-    my $raw_email_payload = encode_base64( Email::Simple->create( header => [To => $my_email_address, 
-                                                                             From => $my_email_address, 
-                                                                             Subject =>"Test email from '$my_email_address' ",], 
-                                                                             body => "This is the body of email to '$my_email_address'", 
-                                                                )->as_string 
-                                        );
+    my $raw_email_payload = encode_base64( Email::Simple->create( 
+             header => [To => $my_email_address, From => $my_email_address, 
+                        Subject =>"Test email from '$my_email_address' ",], 
+             body => "This is the body of email to '$my_email_address'", 
+           )->as_string 
+        );
 
     $gapi_client->api_query( 
                             api_endpoint_id => 'gmail.users.messages.send',
@@ -185,7 +185,9 @@ If the pre-query validation fails then a 418 - I'm a Teapot error response is
 returned with the body containing the specific description of the 
 errors ( Tea Leaves ;^) ).   
 
-=head3 Dealing with inconsistencies
+=head3 B<Dealing with inconsistencies>
+
+
 
 NB: If you pass a 'path' parameter this takes precendence over the
 API Discovery Spec.  Any parameters defined in the path of the
@@ -264,9 +266,7 @@ eg.
                 cb_method_discovery_modify => sub { 
                    my  $meth_spec  = shift; 
                    $meth_spec->{parameters}{valueInputOption}{location} = 'path';
-                   $meth_spec->{path} = join '',
-                      "v4/spreadsheets/{spreadsheetId}/values/{range}',
-                      "?valueInputOption={valueInputOption}";
+                   $meth_spec->{path} .= "?valueInputOption={valueInputOption}";
                    return $meth_spec;
                  }
             );
@@ -366,6 +366,10 @@ sub _process_params_for_api_endpoint_and_return_errors
   
   my $method_discovery_struct = $self->extract_method_discovery_detail_from_api_spec( $params->{ api_endpoint_id } ); ## if can get discovery data for google api endpoint then continue to perform detailed checks
 
+  #save away original path so we can know if it's fiddled with
+  #later
+  $method_discovery_struct->{origPath} = $method_discovery_struct->{path};
+
   ## allow optional user callback pre-processing of method_discovery_struct
   $method_discovery_struct = &{$params->{cb_method_discovery_modify}}($method_discovery_struct) if ( defined $params->{cb_method_discovery_modify} && ref( $params->{cb_method_discovery_modify} ) eq 'CODE' );
 
@@ -406,7 +410,7 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
 
   #create a hash of whatever the expected params may be
   my %path_params; my $param_regex = qr/\{ \+? ([^\}]+) \}/x;
-  if ($params->{path} ne $discovery_struct->{path}) {
+  if ($params->{path} ne $discovery_struct->{origPath}) {
     #check if the path was given as a custom path. If it is, just
     #interpolate things directly, and assume the user is responsible
     %path_params = map { $_ => 'custom' } ($params->{path} =~ /$param_regex/xg); 
@@ -458,6 +462,7 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
 	  #N.B. perhaps support passing an arrayref or csv for those
 	  #params such as jobs.projects.jobs.delete which have two
 	  #dynamic parts. But for now, unnecessary
+	  
 	  #remove the regexy parts of the pattern to interpolate it
 	  #into the path, assuming the user has provided just the
 	  #dynamic portion of the param. 
@@ -484,7 +489,8 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
   if ( @get_query_params ) {
     #interpolate and escape the get query params built up in our
     #former for loop
-    $params->{path} .= '?' . Mojo::Parameters->new(@get_query_params);
+    $params->{path} .= ($params->{path} =~ /\?/) ? '&' : '?';
+    $params->{path} .= Mojo::Parameters->new(@get_query_params);
   }
 
   #interpolate default value for path params if not given. Needed
