@@ -14,11 +14,9 @@ plan skip_all => 'No service configuration - set $ENV{GOOGLE_TOKENSFILE} or crea
 
 ok( my $gapi = WebService::GoogleAPI::Client->new( debug => $DEBUG, gapi_json => $default_file ), 'Creating test session instance of WebService::GoogleAPI::Client' );
 
-my %options;
 
-#TODO- make a test for when the user already passes in a query
-#param
-
+#TODO- make a test for a default param that should go into the
+#query, like 'fields'.
 my $options = {
   api_endpoint_id => "sheets:v4.spreadsheets.values.update",  
   options => { 

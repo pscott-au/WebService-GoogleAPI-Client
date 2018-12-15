@@ -533,7 +533,7 @@ sub extract_method_discovery_detail_from_api_spec
 
 
 
-  ## we use the schames to substitute into '$ref' keyed placeholders 
+  ## we use the schemas to substitute into '$ref' keyed placeholders 
   my $schemas = {};
   foreach my $schema_key (sort keys %{$api_spec->{schemas}})
   {
@@ -551,18 +551,21 @@ sub extract_method_discovery_detail_from_api_spec
   ## now extract all the methods (recursive )
   my $all_api_methods = $self->_extract_resource_methods_from_api_spec( "$api_id:$api_version", $api_spec );
   #print dump $all_api_methods;exit;
-  if ( defined $all_api_methods->{ $tree } )
-  {
+  unless ( defined $all_api_methods->{ $tree } )
+  { 
+    $all_api_methods = $self->_extract_resource_methods_from_api_spec($api_id, $api_spec );
+  }
+  if ($all_api_methods->{$tree}){
+    #add in the global parameters to the endpoint, 
+    #stored in the top level of the api_spec
+    $all_api_methods->{$tree}{parameters} = { 
+      %{ $all_api_methods->{$tree}{parameters} }, %{ $api_spec->{parameters} }
+    };
     return $all_api_methods->{ $tree };
   }
-  else
-  {
-    #return $all_api_methods->{ "$api_id:$api_version" } if ( defined $all_api_methods->{ "$api_id:$api_version" } );
-    return $all_api_methods->{ $tree } if  ( $all_api_methods = $self->_extract_resource_methods_from_api_spec( "$api_id", $api_spec ) );
 
     carp( "Unable to find method detail for '$tree' within Google Discovery Spec for $api_id version $api_version" ) if $self->debug;
     return {};
-  }
 }
 ########################################################
 
@@ -715,4 +718,4 @@ sub list_of_available_google_api_ids
 1;
 
 ## TODO - CODE REVIEW
-## get_expires_at .. deos this do what is expected ? - what if has expired and so get fails - will this still return a value?
+## get_expires_at .. does this do what is expected ? - what if has expired and so get fails - will this still return a value?
