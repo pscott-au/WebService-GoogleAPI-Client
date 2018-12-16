@@ -10,14 +10,29 @@ my $DEBUG = $ENV{GAPI_DEBUG_LEVEL} || 0;        ## to see noise of class debuggi
 my $default_file = $ENV{ 'GOOGLE_TOKENSFILE' } || "$dir/../../gapi.json";    ## assumes running in a sub of the build dir by dzil
 $default_file = "$dir/../gapi.json" unless -e $default_file;                 ## if file doesn't exist try one level up ( allows to run directly from t/ if gapi.json in parent dir )
 
+#if running from root of the repo, grab the one from the t/ directory
+$default_file = "$dir/t/gapi.json" unless -e $default_file;
+
 plan skip_all => 'No service configuration - set $ENV{GOOGLE_TOKENSFILE} or create gapi.json in dzil source root directory'  unless -e $default_file;
 
 ok( my $gapi = WebService::GoogleAPI::Client->new( debug => $DEBUG, gapi_json => $default_file ), 'Creating test session instance of WebService::GoogleAPI::Client' );
 
+my $options = {
+  api_endpoint_id => 'drive.files.list',
+  options => {
+    fields => 'files(id,name,parents)'
+  }
+};
+
+$gapi->_process_params_for_api_endpoint_and_return_errors($options);
+
+is $options->{path}, 
+'https://www.googleapis.com/drive/v3/files?fields=files%28id%2Cname%2Cparents%29',
+'Can interpolate globally available query parameters';
 
 #TODO- make a test for a default param that should go into the
 #query, like 'fields'.
-my $options = {
+$options = {
   api_endpoint_id => "sheets:v4.spreadsheets.values.update",  
   options => { 
     spreadsheetId => 'sner',
@@ -40,7 +55,7 @@ is $options->{path}, 'https://sheets.googleapis.com/v4/spreadsheets/sner/values/
 'interpolation works with user fiddled path, too';
 
 subtest 'Testing {+param} type interpolation options' => sub {
-    plan skip_all => <<MSG
+      plan skip_all => <<MSG
 Need access to the scope https://www.googleapis.com/auth/jobs  
 or https://www.googleapis.com/auth/cloud-platform
 MSG

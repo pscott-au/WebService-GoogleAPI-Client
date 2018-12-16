@@ -406,9 +406,6 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
   my ( $self, $params, $discovery_struct ) = @_;
   my @teapot_errors = ();
 
-  #TODO- we need to add globally available parameters, i guess
-  #from the discovery object
-
   my @get_query_params = ();
 
   #create a hash of whatever the expected params may be
