@@ -24,8 +24,11 @@ my $options = {
   }
 };
 
-$gapi->_process_params_for_api_endpoint_and_return_errors($options);
+sub build_req {
+  $gapi->_process_params_for_api_endpoint_and_return_errors(shift);
+}
 
+build_req($options);
 is $options->{path}, 
 'https://www.googleapis.com/drive/v3/files?fields=files%28id%2Cname%2Cparents%29',
 'Can interpolate globally available query parameters';
@@ -49,10 +52,22 @@ $options = {
   }
 };
 
-$gapi->_process_params_for_api_endpoint_and_return_errors($options);
+build_req($options);
 
 is $options->{path}, 'https://sheets.googleapis.com/v4/spreadsheets/sner/values/Sheet1!A1:A2?valueInputOption=RAW&includeValuesInResponse=true', 
 'interpolation works with user fiddled path, too';
+
+$options = {
+  api_endpoint_id => "sheets:v4.spreadsheets.values.batchGet",  
+  options => { 
+    spreadsheetId => 'sner',
+    ranges => ['Sheet1!A1:A2', 'Sheet1!A3:B5'],
+  },
+};
+build_req($options);
+is $options->{path}, 
+'https://sheets.googleapis.com/v4/spreadsheets/sner/values:batchGet?ranges=Sheet1%21A1%3AA2&ranges=Sheet1%21A3%3AB5', 
+'interpolates arrayref correctly' ;
 
 subtest 'Testing {+param} type interpolation options' => sub {
       plan skip_all => <<MSG
