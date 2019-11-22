@@ -1,4 +1,8 @@
+use strictures;
 package WebService::GoogleAPI::JWT;
+
+# ABSTRACT: JWT for authorizing service accounts
+
 use utf8;
 use Mojo::Base qw(Mojo::JWT);
 use vars qw($VERSION);
@@ -24,7 +28,6 @@ sub new {
 
   if ( $result == 0 ) {
     croak 'Your JSON file import failed.';
-    return undef;
   }
   return $self;
 }
@@ -76,7 +79,7 @@ sub from_json {
   $self->algorithm('RS256');
   $self->secret($json->{private_key});
   $self->client_email($json->{client_email});
-  return 1
+  return $self
 }
 
 1;
@@ -84,15 +87,16 @@ sub from_json {
 
 =head1 NAME
 
-Mojo::JWT::Google - Service Account tokens
+WebService::GoogleAPI::JWT - Service Account tokens
 
 =head1 VERSION
 
 0.05
 
+
 =head1 SYNOPSIS
 
-my $gjwt = Mojo::JWT::Google->new(secret => 's3cr3t',
+  my $gjwt = WebService::GoogleAPI::JWT->new(secret => 's3cr3t',
                                   scopes => [ '/my/scope/a', '/my/scope/b' ],
                                   client_email => 'riche@cpan.org')->encode;
 
@@ -101,12 +105,12 @@ my $gjwt = Mojo::JWT::Google->new(secret => 's3cr3t',
 Like L<Mojo::JWT>, you can instantiate this class by using the same syntax,
 except that this class constructs the claims for you.
 
- my $jwt = Mojo::JWT::Google->new(secret => 's3cr3t')->encode;
+ my $jwt = WebService::GoogleAPI::JWT->new(secret => 's3cr3t')->encode;
 
 And add any attribute defined in this class.  The JWT is fairly useless unless
 you define your scopes.
 
- my $gjwt = Mojo::JWT::Google->new(secret => 's3cr3t',
+ my $gjwt = WebService::GoogleAPI::JWT->new(secret => 's3cr3t',
                                    scopes => [ '/my/scope/a', '/my/scope/b' ],
                                    client_email => 'riche@cpan.org')->encode;
 
@@ -116,7 +120,7 @@ somewhere.  This will ease some busy work in configuring the object -- with
 virtually the only things to do is determine the scopes and the user_as if you
 need to impersonate.
 
- my $gjwt = Mojo::JWT::Google
+ my $gjwt = WebService::GoogleAPI::JWT
    ->new( from_json => '/my/secret.json',
           scopes    => [ '/my/scope/a', '/my/scope/b' ])->encode;
 
@@ -124,7 +128,7 @@ need to impersonate.
 
 =head1 ATTRIBUTES
 
-L<Mojo::JWT::Google> inherits all attributes from L<Mojo::JWT> and defines the
+L<WebService::GoogleAPI::JWT> inherits all attributes from L<Mojo::JWT> and defines the
 following new ones.
 
 =head2 claims
@@ -154,7 +158,7 @@ your Google Business Administrator.
 =head2 target
 
 Get or set the target.  At the time of writing, there is only one valid target:
-https://www.googleapis.com/oauth2/v3/token.  This is the default value; if you
+https://www.googleapis.com/oauth2/v4/token.  This is the default value; if you
 have no need to customize this, then just fetch the default.
 
 
@@ -175,7 +179,7 @@ Inherits all methods from L<Mojo::JWT> and defines the following new ones.
 Loads the JSON file from Google with the client ID information in it and sets
 the respective attributes.
 
-Returns 0 on failure: file not found or value not defined
+Dies a horrible death on failure: 'Your JSON file import failed.'
 
  $gjwt->from_json('/my/google/app/project/sa/json/file');
 
@@ -184,9 +188,6 @@ Returns 0 on failure: file not found or value not defined
 
 L<Mojo::JWT>
 
-=head1 SOURCE REPOSITORY
-
-L<http://github.com/rpcme/Mojo-JWT-Google>
 
 =head1 AUTHOR
 
@@ -195,6 +196,7 @@ Richard Elberger, <riche@cpan.org>
 =head1 CONTRIBUTORS
 
 Scott Wiersdorf, <scott@perlcode.org>
+Avishai Goldman, <veesh@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -202,3 +204,5 @@ Copyright (C) 2015 by Richard Elberger
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
+
+=cut
