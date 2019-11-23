@@ -13,6 +13,13 @@ use Mojo::Util;
 
 #TODO- batch requests. The only thing necessary is to send  a
 #multipart request as I wrote in that e-mail.
+#
+#TODO- implement auth for service accounts.
+#
+#TODO- allow using promises instead of just calling. Also allow
+#      for full access to the tx instead of assuming it's always
+#      returning the res. Perhaps mix in something that delegates the
+#      json method to the res?
 
 # ABSTRACT: Google API Discovery and SDK
 
@@ -397,6 +404,7 @@ sub _process_params_for_api_endpoint_and_return_errors
 ##################################################
 
 #small subs to convert between these_types to theseTypes of params
+#TODO- should probs move this into a Util module
 sub camel { shift if @_ > 1; $_[0] =~ s/ _(\w) /\u$1/grx };
 sub snake { shift if @_ > 1; $_[0] =~ s/([[:upper:]])/_\l$1/grx };
 

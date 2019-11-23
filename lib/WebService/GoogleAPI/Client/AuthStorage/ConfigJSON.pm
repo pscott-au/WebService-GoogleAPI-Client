@@ -8,7 +8,7 @@ use Moo;
 use Config::JSON;
 use Carp;
 
-has 'pathToTokensFile' => ( is => 'rw', default => 'gapi.json' );    # default is gapi.json
+has 'path' => ( is => 'rw', default => 'gapi.json' );    # default is gapi.json
 
 # has 'tokensfile';  # Config::JSON object pointer
 my $tokensfile;
@@ -19,7 +19,7 @@ has 'debug' => ( is => 'rw', default => 0 );
 sub setup
 {
   my ( $self ) = @_;
-  $tokensfile = Config::JSON->new( $self->pathToTokensFile );
+  $tokensfile = Config::JSON->new( $self->path );
   return $self;
 }
 

@@ -18,8 +18,12 @@ use Carp qw/croak carp cluck/;
 has 'do_autorefresh'                => ( is => 'rw', default => 1 );    # if 1 storage must be configured
 has 'auto_update_tokens_in_storage' => ( is => 'rw', default => 1 );
 has 'debug'                         => ( is => 'rw', default => 0 );
-has 'credentials' =>
-  ( is => 'rw', default => sub { WebService::GoogleAPI::Client::Credentials->instance }, handles => [qw/access_token auth_storage get_scopes_as_array user /], lazy => 1 );
+has 'credentials' => ( 
+  is => 'rw', 
+  default => sub { WebService::GoogleAPI::Client::Credentials->instance },
+  handles => [qw/access_token auth_storage get_scopes_as_array user /],
+  lazy => 1 
+);
 
 ## NB - could cache using https://metacpan.org/pod/Mojo::UserAgent::Cached TODO: Review source of this for ideas 
 
@@ -44,7 +48,7 @@ sub BUILD
 
 =cut
 
-## TODO: this should probably nbe handled ->on('start' => sub {}) as per https://metacpan.org/pod/Mojolicious::Guides::Cookbook#Decorating-follow-up-requests
+## TODO: this should probably be handled ->on('start' => sub {}) as per https://metacpan.org/pod/Mojolicious::Guides::Cookbook#Decorating-follow-up-requests
 
 sub header_with_bearer_auth_token
 {
@@ -179,6 +183,7 @@ sub validated_api_query
  my $tx =  $self->build_http_transaction( $params );
  
  cluck("$params->{method} $params->{path}") if $self->debug;
+  #TODO- figure out how we can alter this to use promises
   my $res = $self->start( $tx )->res;
   
   ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction
@@ -189,6 +194,7 @@ sub validated_api_query
   if ( ( $res->code == 401 ) && $self->do_autorefresh )
   {
     if ( $res->code == 401 )     ## redundant - was there something else in mind ?
+    #TODO- I'm fairly certain this fires too often
     {
       croak "No user specified, so cant find refresh token and update access_token" unless $self->user;
       cluck "401 response - access_token was expired. Attemptimg to update it automatically ..." if  ($self->debug > 11);

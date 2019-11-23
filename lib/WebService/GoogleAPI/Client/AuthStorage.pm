@@ -34,7 +34,7 @@ sub setup
   my ( $self, $params ) = @_;
   if ( $params->{ type } eq 'jsonfile' )
   {
-    $self->storage->pathToTokensFile( $params->{ path } );
+    $self->storage->path( $params->{ path } );
     $self->storage->setup;
     $self->is_set( 1 );
   }
