@@ -28,3 +28,5 @@ examples/*.png
 **/delme*
 *.json
 docs/cover/*
+
+.*.sw?
