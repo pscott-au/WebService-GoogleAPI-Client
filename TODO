@@ -1,0 +1,38 @@
+we're trying to take care of a bunch of things.
+
+In order to implement service accounts, we need to have an
+encapsulated interface for retrieving and refreshing tokens. Then,
+there can be a shared interface, and both normal files and service
+accounts can be called the same way.
+
+We expect to implement something which parses the json file, and
+then determines what type it is. A gapi file has 'gapi' as the top
+level key. A service account has the following top level keys:
+qw/ type project_id private_key_id private_key client_email
+client_id auth_uri token_uri auth_provider_x509_cert_url
+client_x509_cert_url /.
+
+
+
+#Other Issues
+
+We'd like to implement a cache for constructing calls, b/c it
+works WAAAY too hard. Constructing 100 calls to
+sheets.spreadsheets.values.batchGetByDataFilter made my CPU churn
+like a tell, and for way too long, too.
+
+
+I'd like to abstract the interpolation and crud into a seperate
+module, so that I could use it to make the inner requests for a
+batch request.
+
+I'd like to implement generators for the main ua, and use that as
+an interface for adding the headers and crud. The only reason to
+not use the 'start' hook is b/c we don't want our auth stuff on a
+request for a token. Unless it doesn't matter...
+
+We need some live tests that we'll put in the xt directory, so
+that we can be sure that when it's live things work.
+
+We must fix all the weird warnings in the test suite, and improve
+our coverage and stuff.
