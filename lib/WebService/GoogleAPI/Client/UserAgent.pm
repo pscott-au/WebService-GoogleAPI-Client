@@ -50,22 +50,18 @@ sub BUILD
 
 ## TODO: this should probably be handled ->on('start' => sub {}) as per https://metacpan.org/pod/Mojolicious::Guides::Cookbook#Decorating-follow-up-requests
 
-sub header_with_bearer_auth_token
-{
+sub header_with_bearer_auth_token {
   my ( $self, $headers ) = @_;
 
   $headers = {} unless defined $headers;
 
-  $headers->{ 'Accept-Encoding' } = 'gzip';
+  $headers->{'Accept-Encoding'} = 'gzip';
 
-  # cluck "header_with_bearer_auth_token: ".$self->access_token;
-  if ( $self->access_token )
-  {
-    $headers->{ 'Authorization' } = 'Bearer ' . $self->access_token;
+  if ($self->access_token) {
+    $headers->{Authorization} = 'Bearer ' . $self->access_token;
   }
-  else
-  {
-    cluck 'No access_token, can\'t build Auth header';
+  else {
+    carp 'No access_token, can\'t build Auth header';
   }
   return $headers;
 }

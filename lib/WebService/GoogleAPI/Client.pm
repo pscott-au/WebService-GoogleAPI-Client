@@ -38,7 +38,7 @@ Access Google API Services Version 1 using an OAUTH2 User Agent.
 Includes Discovery, validation authentication and API Access.
 
 assumes gapi.json configuration in working directory with scoped Google project 
-redentials and user authorization created by _goauth_
+credentials and user authorization created by _goauth_
 
     use WebService::GoogleAPI::Client;
     
@@ -138,6 +138,7 @@ sub BUILD
 {
   my ( $self, $params ) = @_;
 
+  #TODO- implement google standard way of finding the credentials
   $self->auth_storage->setup( { type => 'jsonfile', path => $params->{ gapi_json } } ) if ( defined $params->{ gapi_json } );
   $self->user( $params->{ user } ) if ( defined $params->{ user } );
 

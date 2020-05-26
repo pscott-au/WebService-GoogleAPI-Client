@@ -1,5 +1,7 @@
 we're trying to take care of a bunch of things.
 
+#better support for service accounts
+
 In order to implement service accounts, we need to have an
 encapsulated interface for retrieving and refreshing tokens. Then,
 there can be a shared interface, and both normal files and service
@@ -13,18 +15,27 @@ client_id auth_uri token_uri auth_provider_x509_cert_url
 client_x509_cert_url /.
 
 
-
 #Other Issues
+
+## Less logic on repeated calls
 
 We'd like to implement a cache for constructing calls, b/c it
 works WAAAY too hard. Constructing 100 calls to
 sheets.spreadsheets.values.batchGetByDataFilter made my CPU churn
 like a tell, and for way too long, too.
 
+Maybe even go for dynamic class creation, similar to what OpenAPI
+producers use. Although I'm thinking of just moving over to using
+gRPC, which does actually have a perl client (seemingly).
+
+
+## Encapsulate logic better
 
 I'd like to abstract the interpolation and crud into a seperate
 module, so that I could use it to make the inner requests for a
 batch request.
+
+## Use generators instead
 
 I'd like to implement generators for the main ua, and use that as
 an interface for adding the headers and crud. The only reason to
@@ -34,5 +45,12 @@ request for a token. Unless it doesn't matter...
 We need some live tests that we'll put in the xt directory, so
 that we can be sure that when it's live things work.
 
+## Test suite is filled with garbage
+
 We must fix all the weird warnings in the test suite, and improve
 our coverage and stuff.
+
+Fix the usage of a gapi.json here. We need to clean up its attempt
+to find.
+
+Move everything to Test2.

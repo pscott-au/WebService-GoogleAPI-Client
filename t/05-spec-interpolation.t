@@ -7,6 +7,7 @@ use WebService::GoogleAPI::Client;
 
 my $dir   = getcwd;
 my $DEBUG = $ENV{GAPI_DEBUG_LEVEL} || 0;        ## to see noise of class debugging
+
 my $default_file = $ENV{ 'GOOGLE_TOKENSFILE' } || "$dir/../../gapi.json";    ## assumes running in a sub of the build dir by dzil
 $default_file = "$dir/../gapi.json" unless -e $default_file;                 ## if file doesn't exist try one level up ( allows to run directly from t/ if gapi.json in parent dir )
 
@@ -16,6 +17,8 @@ $default_file = "$dir/t/gapi.json" unless -e $default_file;
 plan skip_all => 'No service configuration - set $ENV{GOOGLE_TOKENSFILE} or create gapi.json in dzil source root directory'  unless -e $default_file;
 
 ok( my $gapi = WebService::GoogleAPI::Client->new( debug => $DEBUG, gapi_json => $default_file ), 'Creating test session instance of WebService::GoogleAPI::Client' );
+
+$gapi->user('peter@shotgundriver.com');
 
 my $options = {
   api_endpoint_id => 'drive.files.list',
