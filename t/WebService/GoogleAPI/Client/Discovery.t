@@ -219,9 +219,14 @@ subtest 'checking for API availablity' => sub {
 
     is $disco->process_api_version('gmail:v2'), 
       { api => 'gmail', version => 'v2' },
+      'take a version if given (even if imaginary)';
+
+    is $disco->process_api_version({ api => 'gmail', version => 'v2' }), 
+      { api => 'gmail', version => 'v2' },
       'take a version if given';
 
-    #TODO- check for proper behavior on errors
+    like dies { $disco->process_api_version('fleurbop') },
+      qr/fleurbop .* not .* valid .* API/, 'errors on non-found api';
   };
 
 };

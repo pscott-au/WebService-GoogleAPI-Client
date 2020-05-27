@@ -126,109 +126,25 @@ sub discover_all {
   $self->get_with_cache($self->discover_key, @_);
 }
 
-=head2 C<process_api_version>
-
-  my $hashref = $disco->process_api_version('gmail')   
-     # { api => 'gmail', version => 'v1' }
-  my $hashref = $disco->process_api_version({ api => 'gmail' })   
-     # { api => 'gmail', version => 'v1' }
-  my $hashref = $disco->process_api_version('gmail:v2') 
-     # { api => 'gmail', version 'v2' }
-
-Takes a version string and breaks it into a hashref. If no version is 
-given, then default to the latest stable version in the discover document.
-
-
-=cut
-
-sub process_api_version {
-  my ($self, $params) = @_;
-  # scalar parameter not hashref - so assume is intended to be $params->{api}
-  $params = { api => $params } if ref $params eq '';
-
-  croak "'api' must be defined" unless $params->{api};
-
-  ## trim any resource, method or version details in api id
-  if ($params->{api} =~ /([^:]+):(v[^\.]+)/ixsm) {
-    $params->{api}     = $1;
-    $params->{version} = $2;
-  }
-  if ($params->{api} =~ /^(.*?)\./xsm) {
-    $params->{api} = $1;
-  }
-
-  $params->{version} //= $self->latest_stable_version($params->{api});
-  return $params
-}
-
-
-=head2 get_api_document
-
-returns the cached version if avaiable in CHI otherwise retrieves discovery data via HTTP, stores in CHI cache and returns as
-a Perl data structure.
-
-    my $hashref = $self->get_api_document( 'gmail' );
-    my $hashref = $self->get_api_document( 'gmail:v3' );
-    my $hashref = $self->get_api_document( 'gmail:v3.users.list' );
-    my $hashref = $self->get_api_document( { api=> 'gmail', version => 'v3' } );
-
-NB: if deeper structure than the api_id is provided then only the head is used
-so get_api_document( 'gmail' ) is the same as get_api_document( 'gmail.some.child.method' )
-returns the api discovery specification structure ( cached by CHI ) for api id (eg 'gmail')
-returns the discovery data as a hashref, an empty hashref on certain failing conditions or croaks on critical errors.
-
-Also available as get_api_discovery_for_api_id, which is being deprecated.
-
-=cut
-
-sub get_api_discovery_for_api_id {
-  carp <<DEPRECATION;
-This long method name (get_api_discovery_for_api_id) is being deprecated
-in favor of get_api_document. Please switch your code soon
-DEPRECATION
-  shift->get_api_document(@_)
-}
-
-sub get_api_document {
-  my ($self, $arg) = @_;
-
-  my $params = $self->process_api_version($arg);
-  my $apis = $self->available_APIs();
-
-  my $api = $apis->{$params->{api}};
-  croak "No versions found for $params->{api}" unless $api->{version};
-  my @versions = @{$api->{version}};
-  my @urls = @{$api->{discoveryRestUrl}};
-
-  my ($url) = pairwise { $a eq $params->{version} ? $b : () } @versions, @urls;
-
-  croak "Couldn't find correct url for $params->{api} $params->{version}"
-    unless $url;
-
-  $self->get_with_cache($url);
-}
-
-
-
 #TODO- double triple check that we didn't break anything with the
 #hashref change
 =head2 C<available_APIs>
 
-Return arrayref of all available API's (services)
+Return hashref keyed on api name, with arrays of versions, links to 
+documentation, and links to the url for that version's API document.
 
     {
-      name => 'youtube',
-      versions => [ 'v3' ]
-      doclinks => [ ... ] ,
-      discoveryRestUrl => [ ... ] ,
-    },
+      youtube => {
+        version           => [ 'v3', ... ]
+        documentationLink => [ ...,  ... ] ,
+        discoveryRestUrl  => [ ...,  ... ] ,
+      },
+      gmail => {
+        ...
+      } 
+    }
 
-Originally for printing list of supported API's in documentation ..
- 
-
-SEE ALSO: 
-may be better/more flexible to use client->list_of_available_google_api_ids  
-client->discover_all which is delegated to Client::Discovery->discover_all
+Used internally to pull relevant discovery documents.
 
 =cut
 
@@ -246,11 +162,11 @@ sub available_APIs {
   my $d_all = $self->discover_all;
   croak 'no items in discovery data' unless defined $d_all->{items};
 
+  #grab only entries with the four keys we want
+  #and strip other keys
   my @keys = qw/name version documentationLink discoveryRestUrl/;
   my @relevant;
   for my $i (@{ $d_all->{items} }) {
-    #grab only entries with the four keys we want, and strip other
-    #keys
     next unless @keys == grep { exists $i->{$_} } @keys;
     push @relevant, { %{$i}{@keys} };
   };
@@ -263,8 +179,8 @@ sub available_APIs {
     $a;
   } {}, @relevant;
 
+  #store it away globally
   $available = $reduced;
-
 }
 
 =head2 C<augment_with>
@@ -297,8 +213,8 @@ being deprecated for being plain old too long.
 sub augment_discover_all_with_unlisted_experimental_api {
   my ($self, $api_spec) = @_;
   carp <<DEPRECATION;
-This lengthy function name will be removed soon.
-Please use 'augment_with' instead.
+This lengthy function name (augment_discover_all_with_unlisted_experimental_api)
+will be removed soon.  Please use 'augment_with' instead.
 DEPRECATION
   $self->augment_with($api_spec);
 }
@@ -387,11 +303,120 @@ sub latest_stable_version {
   return $stable[-1] || '';
 }
 
+=head2 C<process_api_version>
+
+  my $hashref = $disco->process_api_version('gmail')   
+     # { api => 'gmail', version => 'v1' }
+  my $hashref = $disco->process_api_version({ api => 'gmail' })   
+     # { api => 'gmail', version => 'v1' }
+  my $hashref = $disco->process_api_version('gmail:v2') 
+     # { api => 'gmail', version 'v2' }
+
+Takes a version string and breaks it into a hashref. If no version is 
+given, then default to the latest stable version in the discover document.
+
+=cut
+
+sub process_api_version {
+  my ($self, $params) = @_;
+  # scalar parameter not hashref - so assume is intended to be $params->{api}
+  $params = { api => $params } if ref $params eq '';
+
+  croak "'api' must be defined" unless $params->{api};
+
+  ## trim any resource, method or version details in api id
+  if ($params->{api} =~ /([^:]+):(v[^\.]+)/ixsm) {
+    $params->{api}     = $1;
+    $params->{version} = $2;
+  }
+  if ($params->{api} =~ /^(.*?)\./xsm) {
+    $params->{api} = $1;
+  }
+
+  unless ($self->service_exists($params->{api})) {
+    croak "$params->{api} does not seem to be a valid Google API";
+  }
+
+  $params->{version} //= $self->latest_stable_version($params->{api});
+  return $params
+}
+
+
+=head2 get_api_document
+
+returns the cached version if avaiable in CHI otherwise retrieves discovery data via HTTP, stores in CHI cache and returns as
+a Perl data structure.
+
+    my $hashref = $self->get_api_document( 'gmail' );
+    my $hashref = $self->get_api_document( 'gmail:v3' );
+    my $hashref = $self->get_api_document( 'gmail:v3.users.list' );
+    my $hashref = $self->get_api_document( { api=> 'gmail', version => 'v3' } );
+
+NB: if deeper structure than the api_id is provided then only the head is used
+so get_api_document( 'gmail' ) is the same as get_api_document( 'gmail.some.child.method' )
+returns the api discovery specification structure ( cached by CHI ) for api id (eg 'gmail')
+returns the discovery data as a hashref, an empty hashref on certain failing conditions or croaks on critical errors.
+
+Also available as get_api_discovery_for_api_id, which is being deprecated.
+
+=cut
+
+sub get_api_discovery_for_api_id {
+  carp <<DEPRECATION;
+This long method name (get_api_discovery_for_api_id) is being deprecated
+in favor of get_api_document. Please switch your code soon
+DEPRECATION
+  shift->get_api_document(@_)
+}
+
+sub get_api_document {
+  my ($self, $arg) = @_;
+
+  my $params = $self->process_api_version($arg);
+  my $apis = $self->available_APIs();
+
+  my $api = $apis->{$params->{api}};
+  croak "No versions found for $params->{api}" unless $api->{version};
+
+  my @versions = @{$api->{version}};
+  my @urls = @{$api->{discoveryRestUrl}};
+  my ($url) = pairwise { $a eq $params->{version} ? $b : () } @versions, @urls;
+
+  croak "Couldn't find correct url for $params->{api} $params->{version}"
+    unless $url;
+
+  $self->get_with_cache($url);
+}
+
+#TODO- HERE - we are here in refactoring
+sub _extract_resource_methods_from_api_spec {
+  my ($self, $tree, $api_spec, $ret) = @_;
+  $ret = {} unless defined $ret;
+  croak("ret not a hash - $tree, $api_spec, $ret") unless ref($ret) eq 'HASH';
+
+  if (defined $api_spec->{methods} && ref($api_spec->{methods}) eq 'HASH') {
+    foreach my $method (keys %{ $api_spec->{methods} }) {
+      $ret->{"$tree.$method"} = $api_spec->{methods}{$method}
+        if ref($api_spec->{methods}{$method}) eq 'HASH';
+    }
+  }
+  if (defined $api_spec->{resources}) {
+    foreach my $resource (keys %{ $api_spec->{resources} }) {
+      ## NB - recursive traversal down tree of api_spec resources
+      $self->_extract_resource_methods_from_api_spec("$tree.$resource",
+        $api_spec->{resources}{$resource}, $ret);
+    }
+  }
+  return $ret;
+}
+
 =head2 C<get_method_details>
 
     $disco->get_method_details($tree, $api_version)
 
-returns a hashref representing the discovery specification for the method identified by $tree in dotted API format such as texttospeech.text.synthesize
+returns a hashref representing the discovery specification for the
+method identified by $tree in dotted API format such as
+texttospeech.text.synthesize
 
 returns an empty hashref if not found.
 
@@ -400,12 +425,10 @@ deprecated in favor of the more compact one.
 =cut
 
 
-########################################################
 sub extract_method_discovery_detail_from_api_spec {
   carp <<DEPRECATION;
-This rather long method name
-(extract_method_discovery_detail_from_api_spec) is being
-deprecated in favor of get_method_details. Please switch soon
+This rather long method name (extract_method_discovery_detail_from_api_spec)
+is being deprecated in favor of get_method_details. Please switch soon
 DEPRECATION
   shift->get_method_details(@_)
 }
@@ -414,6 +437,7 @@ sub get_method_details {
   my ($self, $tree, $api_version) = @_;
   ## where tree is the method in format from _extract_resource_methods_from_api_spec() like projects.models.versions.get
   ##   the root is the api id - further '.' sep levels represent resources until the tailing label that represents the method
+  #TODO- should die a horrible death if method not found
   return {} unless defined $tree;
 
   my @nodes = split /\./smx, $tree;
@@ -493,26 +517,6 @@ sub get_method_details {
 ########################################################
 
 ########################################################
-sub _extract_resource_methods_from_api_spec {
-  my ($self, $tree, $api_spec, $ret) = @_;
-  $ret = {} unless defined $ret;
-  croak("ret not a hash - $tree, $api_spec, $ret") unless ref($ret) eq 'HASH';
-
-  if (defined $api_spec->{methods} && ref($api_spec->{methods}) eq 'HASH') {
-    foreach my $method (keys %{ $api_spec->{methods} }) {
-      $ret->{"$tree.$method"} = $api_spec->{methods}{$method}
-        if ref($api_spec->{methods}{$method}) eq 'HASH';
-    }
-  }
-  if (defined $api_spec->{resources}) {
-    foreach my $resource (keys %{ $api_spec->{resources} }) {
-      ## NB - recursive traversal down tree of api_spec resources
-      $self->_extract_resource_methods_from_api_spec("$tree.$resource",
-        $api_spec->{resources}{$resource}, $ret);
-    }
-  }
-  return $ret;
-}
 ########################################################
 
 #=head2 C<fix_ref>
@@ -588,6 +592,7 @@ representing the corresponding discovery specification for that method ( API End
 #  get_api_discovery_for_api_id
 
 ########################################################
+#TODO- give short name and deprecate
 sub methods_available_for_google_api_id {
   my ($self, $api_id, $version) = @_;
 
