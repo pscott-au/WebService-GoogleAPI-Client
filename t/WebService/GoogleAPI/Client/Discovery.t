@@ -158,27 +158,74 @@ subtest 'Augmenting the api' => sub {
 
 };
 
-subtest 'available_APIs' => sub {
+subtest 'checking for API availablity' => sub {
   #NOTE- this is used a lot internally, so let's just make sure it
   #      does what we want
   my $list = $disco->available_APIs;
 
-  like $list, bag {
-    item hash {
-      field name => 'gmail';
-      field versions => bag { item 'v1'; etc; };
-      field doclinks => bag { item 'https://developers.google.com/gmail/api/'; etc; };
+  like $list, hash {
+    field gmail => hash {
+      field version => bag { item 'v1'; etc; };
+      field documentationLink => bag { item 'https://developers.google.com/gmail/api/'; etc; };
       field discoveryRestUrl => bag { item 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'; etc; };
       end;
     };
     etc;
   }, 'collapsed structure as expected';
 
+  subtest 'service_exists' => sub {
+    ok !$disco->service_exists('yourfez'), 'non-extant tells us such';
+    ok $disco->service_exists('gmail'), 'verified that gmail exists';
+    ok !$disco->service_exists('Gmail'), 'is case sensitive';
+    ok $disco->service_exists('youtubeAnalytics'), 'gets youtube analytics';
+  };
+
+  subtest 'available_version' => sub {
+    is $disco->available_versions('gmail'), [ 'v1' ], 'got gmail';
+    is $disco->available_versions('GMAIL'), [], 'case sensitive gmail';
+    is $disco->available_versions('firestore'), [ qw/v1 v1beta1 v1beta2/ ],
+      'got many versions for firestore';
+    is $disco->available_versions('youtubeAnalytics'), [ qw/v1 v2/ ],
+      'got many for youtube analytics';
+    is $disco->available_versions('yourfez'), [], 'empty for non-existant';
+  };
+
+  subtest 'latest_stable_version' => sub {
+    is $disco->latest_stable_version('gmail'), 'v1', 'got for gmail';
+    is $disco->latest_stable_version('compute'), 'v1', 'got for compute';
+    is $disco->latest_stable_version('bigqueryreservation'),
+      'v1', 'ignores alphas AND betas';
+  };
+
+  subtest 'list_api_ids' => sub {
+    for my $id (qw/gmail compute bigqueryreservation/) {
+      like scalar($disco->list_api_ids), qr/$id/,
+        "has an entry for $id in scalar mode";
+      like [ $disco->list_api_ids ], bag {
+        item $id;
+        etc;
+      }, "has an entry for $id in list mode";
+    }
+  };
+
+  subtest 'process_api_version' => sub {
+    is $disco->process_api_version('gmail'), 
+      { api => 'gmail', version => 'v1' },
+      'got default';
+
+    is $disco->process_api_version({ api => 'gmail' }), 
+      { api => 'gmail', version => 'v1' },
+      'got default from hashref';
+
+    is $disco->process_api_version('gmail:v2'), 
+      { api => 'gmail', version => 'v2' },
+      'take a version if given';
+
+    #TODO- check for proper behavior on errors
+  };
+
 };
 
-#TODO- get available_APIs and list_of_available_api_ids
-#  compare and contrast which one is extraneous. Make sure outside
-#  code doesn't peek into our innards...
 done_testing;
 
 __DATA__

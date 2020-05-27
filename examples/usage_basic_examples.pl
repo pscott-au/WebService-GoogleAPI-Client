@@ -123,8 +123,6 @@ use WebService::GoogleAPI::Client::Discovery;
 #say my $x = WebService::GoogleAPI::Client::Discovery->new->list_of_available_google_api_ids();
 say 'fnarly' if ref( WebService::GoogleAPI::Client::Discovery->new->discover_all() ) eq 'HASH';
 
-say length( WebService::GoogleAPI::Client::Discovery->new->supported_as_text ) > 100;
-
 #say Dumper $x;
 
 say WebService::GoogleAPI::Client::Discovery->new->api_verson_urls;

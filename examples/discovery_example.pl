@@ -365,11 +365,6 @@ if ( 1 == 0 )    ## TODO: - explore interpolation of variables
 ######################################
 
 
-# my $api_verson_urls = api_version_urls(); ## hash of api discovery urls api->version->url .. bugger deleted this function
-#print Dumper $api_verson_urls ;
-#my $api = 'appengine'; my $version = 'v1beta5';
-#my $api = 'sheets'; my $version = 'v4';
-#my $api = 'sheets'; my $version = '';
 my $api     = 'gmail';
 my $version = 'v1';
 
@@ -465,7 +460,6 @@ for my $api ( @{ $aapis } )
 exit;
 
 
-print WebService::GoogleAPI::Client::Discovery->new->supported_as_text();
 exit;
 
 

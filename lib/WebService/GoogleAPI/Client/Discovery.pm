@@ -35,6 +35,7 @@ use Moo;
 use Carp;
 use WebService::GoogleAPI::Client::UserAgent;
 use List::Util qw/uniq reduce/;
+use List::SomeUtils qw/pairwise/;
 use Hash::Slice qw/slice/;
 use Data::Dump qw/pp/;
 use CHI;
@@ -112,7 +113,7 @@ Return details about all Available Google APIs as provided by Google or in CHI C
 Does the fetching with C<get_with_cache>, and arguments are as above.
 
 On Success: Returns HASHREF with keys discoveryVersion,items,kind
-On Failure: Warns and returns empty hashref
+On Failure: dies a horrible death. You probably don't want to continue in that case.
 
 SEE ALSO: available_APIs, list_of_available_google_api_ids
 
@@ -125,35 +126,27 @@ sub discover_all {
   $self->get_with_cache($self->discover_key, @_);
 }
 
+=head2 C<process_api_version>
 
-=head2 get_api_discovery_for_api_id
+  my $hashref = $disco->process_api_version('gmail')   
+     # { api => 'gmail', version => 'v1' }
+  my $hashref = $disco->process_api_version({ api => 'gmail' })   
+     # { api => 'gmail', version => 'v1' }
+  my $hashref = $disco->process_api_version('gmail:v2') 
+     # { api => 'gmail', version 'v2' }
 
-returns the cached version if avaiable in CHI otherwise retrieves discovery data via HTTP, stores in CHI cache and returns as
-a Perl data structure.
+Takes a version string and breaks it into a hashref. If no version is 
+given, then default to the latest stable version in the discover document.
 
-    my $hashref = $self->get_api_discovery_for_api_id( 'gmail' );
-    my $hashref = $self->get_api_discovery_for_api_id( 'gmail:v3' );
-    my $hashref = $self->get_api_discovery_for_api_id( 'gmail:v3.users.list' );
-    my $hashref = $self->get_api_discovery_for_api_id( { api=> 'gmail', version => 'v3' } );
-
-NB: if deeper structure than the api_id is provided then only the head is used
-
-so get_api_discovery_for_api_id( 'gmail' ) is the same as get_api_discovery_for_api_id( 'gmail.some.child.method' )
-
-returns the api discovery specification structure ( cached by CHI ) for api id (eg 'gmail')
-
-returns the discovery data as a hashref, an empty hashref on certain failing conditions or croaks on critical errors.
 
 =cut
 
-sub get_api_discovery_for_api_id {
+sub process_api_version {
   my ($self, $params) = @_;
-  ## TODO: warn if user doesn't have the necessary scope .. no should stil be able to examine
-  ## TODO: consolidate the http method calls to a single function - ie - discover_all - simplistic quick fix -  assume that if no param then endpoint is as per discover_all
+  # scalar parameter not hashref - so assume is intended to be $params->{api}
+  $params = { api => $params } if ref $params eq '';
 
-  $params = { api => $params }
-    if ref $params eq ''
-    ; ## scalar parameter not hashref - so assume is intended to be $params->{api}
+  croak "'api' must be defined" unless $params->{api};
 
   ## trim any resource, method or version details in api id
   if ($params->{api} =~ /([^:]+):(v[^\.]+)/ixsm) {
@@ -164,99 +157,61 @@ sub get_api_discovery_for_api_id {
     $params->{api} = $1;
   }
 
-
-  croak(
-    "get_api_discovery_for_api_id called with api param undefined" . pp $params)
-    unless defined $params->{api};
-  $params->{version} = $self->latest_stable_version($params->{api})
-    unless defined $params->{version};
-
-  croak("get_api_discovery_for_api_id called with empty api param defined"
-      . pp $params)
-    if $params->{api} eq '';
-  croak("get_api_discovery_for_api_id called with empty version param defined"
-      . pp $params)
-    if $params->{version} eq '';
-
-  my $aapis = $self->available_APIs();
+  $params->{version} //= $self->latest_stable_version($params->{api});
+  return $params
+}
 
 
-  my $api_verson_urls = {};
-  for my $api (@{$aapis}) {
-    for (my $i = 0; $i < scalar @{ $api->{versions} }; $i++) {
-      $api_verson_urls->{ $api->{name} }{ $api->{versions}[$i] }
-        = $api->{discoveryRestUrl}[$i];
-    }
-  }
-  croak("Unable to determine discovery URI for any version of $params->{api}")
-    unless defined $api_verson_urls->{ $params->{api} };
-  croak(
-    "Unable to determine discovery URI for $params->{api} $params->{version}")
-    unless defined $api_verson_urls->{ $params->{api} }{ $params->{version} };
-  my $api_discovery_uri
-    = $api_verson_urls->{ $params->{api} }{ $params->{version} };
+=head2 get_api_document
 
-#carp "get_api_discovery_for_api_id requires data from  $api_discovery_uri" if $self->debug;
-  if (my $dat = $self->chi->get($api_discovery_uri)
-    ) ## clobbers some of the attempted thinking further on .. just return it for now if it's there
-  {
-    #carp pp $dat;
-    $self->{stats}{cache}{get}++;
-    return $dat;
-  }
+returns the cached version if avaiable in CHI otherwise retrieves discovery data via HTTP, stores in CHI cache and returns as
+a Perl data structure.
 
-  if (my $expires_at = $self->chi->get_expires_at($api_discovery_uri)
-    )    ## maybe this isn't th ebest way to check if get available.
-  {
-    carp "CHI '$api_discovery_uri' cached data with root = "
-      . $self->chi->root_dir
-      . "expires  in ", scalar($expires_at) - time(), " seconds\n"
-      if $self->debug;
+    my $hashref = $self->get_api_document( 'gmail' );
+    my $hashref = $self->get_api_document( 'gmail:v3' );
+    my $hashref = $self->get_api_document( 'gmail:v3.users.list' );
+    my $hashref = $self->get_api_document( { api=> 'gmail', version => 'v3' } );
 
-  #carp "Value = " . pp $self->chi->get( $api_discovery_uri ) if  $self->debug ;
-    return $self->chi->get($api_discovery_uri);
+NB: if deeper structure than the api_id is provided then only the head is used
+so get_api_document( 'gmail' ) is the same as get_api_document( 'gmail.some.child.method' )
+returns the api discovery specification structure ( cached by CHI ) for api id (eg 'gmail')
+returns the discovery data as a hashref, an empty hashref on certain failing conditions or croaks on critical errors.
 
-  } else {
-    carp "'$api_discovery_uri' not in cache - fetching it" if $self->debug;
-    ## TODO: better handle failed response - if 403 then consider adding in the auth headers and trying again.
-    #croak("Huh $api_discovery_uri");
-    my $ret = $self->ua->validated_api_query($api_discovery_uri)
-      ;    # || croak("Failed to retrieve $api_discovery_uri");;
-    if ($ret->is_success) {
-      my $dat = $ret->json
-        || croak("failed to convert $api_discovery_uri return data in json");
+Also available as get_api_discovery_for_api_id, which is being deprecated.
 
-      #carp("dat1 = " . pp $dat);
-      $self->chi->set($api_discovery_uri, $dat, '30 days');
-      $self->{stats}{network}{get}++;
-      return $dat;
+=cut
 
-#my $ret_data = $self->chi->get( $api_discovery_uri );
-#carp ("ret_data = " . pp $ret_data) unless ref($ret_data) eq 'HASH';
-#return $ret_data;# if ref($ret_data) eq 'HASH';
-#croak();
-#$self->chi->remove( $api_discovery_uri ) unless eval '${^TAINT}'; ## if not hashref then assume is corrupt so delete it
-    } else {
-      ## TODO - why is this failing for certain resources ?? because the urls contain a '$' ? because they are now authenticated?
-      carp("Fetching resource failed - $ret->message");    ## was croaking
-      carp(pp $ret );
-      return {};                                           #$ret;
-    }
-  }
-  croak(
-    "something went wrong in get_api_discovery_for_api_id key = '$api_discovery_uri' - try again to see if data corruption has been flushed for "
-      . pp $params);
+sub get_api_discovery_for_api_id {
+  carp <<DEPRECATION;
+This long method name (get_api_discovery_for_api_id) is being deprecated
+in favor of get_api_document. Please switch your code soon
+DEPRECATION
+  shift->get_api_document(@_)
+}
 
+sub get_api_document {
+  my ($self, $arg) = @_;
+
+  my $params = $self->process_api_version($arg);
+  my $apis = $self->available_APIs();
+
+  my $api = $apis->{$params->{api}};
+  croak "No versions found for $params->{api}" unless $api->{version};
+  my @versions = @{$api->{version}};
+  my @urls = @{$api->{discoveryRestUrl}};
+
+  my ($url) = pairwise { $a eq $params->{version} ? $b : () } @versions, @urls;
+
+  croak "Couldn't find correct url for $params->{api} $params->{version}"
+    unless $url;
+
+  $self->get_with_cache($url);
 }
 
 
 
-#TODO- is used in get_api_discover_for_api_id
-#      is used in service_exists
-#      is used in supported_as_text
-#      is used in available_versions
-#      is used in api_versions_urls
-#      is used in list_of_available_google_api_ids
+#TODO- double triple check that we didn't break anything with the
+#hashref change
 =head2 C<available_APIs>
 
 Return arrayref of all available API's (services)
@@ -308,14 +263,8 @@ sub available_APIs {
     $a;
   } {}, @relevant;
 
-  $available = [
-    map { {
-      name             => $_,
-      versions         => $reduced->{$_}{version},
-      doclinks         => $reduced->{$_}{documentationLink},
-      discoveryRestUrl => $reduced->{$_}{discoveryRestUrl}
-    } } keys %$reduced
-  ];
+  $available = $reduced;
+
 }
 
 =head2 C<augment_with>
@@ -378,66 +327,29 @@ sub augment_with {
 
 =head2 C<service_exists>
 
- Return 1 if Google Service API ID is described by Google API discovery. 
- Otherwise return 0
+Return 1 if Google Service API ID is described by Google API discovery. 
+Otherwise return 0
 
-  print $d->service_exists('calendar');  # 1
-  print $d->service_exists('someapi');  # 0
+  print $disco->service_exists('calendar');  # 1
+  print $disco->service_exists('someapi');  # 0
 
-NB - Is case sensitive - all lower is required so $d->service_exists('Calendar') returns 0
+Note that most Google APIs are fully lowercase, but some are camelCase. Please
+check the documentation from Google for reference.
 
 =cut
 
 sub service_exists {
   my ($self, $api) = @_;
-  return 0 unless $api;
-  my $apis_all = $self->available_APIs();
-  return
-    grep { $_->{name} eq $api }
-    @$apis_all;    ## 1 iff an equality is found with keyed name
-}
-
-=head2 C<supported_as_text>
-
-  No params.
-  Returns list of supported APIs as string in human-readible format ( name, versions and doclinks )
- 
-
-=cut
-
-sub supported_as_text {
-  my ($self) = @_;
-  my $ret = '';
-  for my $api (@{ $self->available_APIs() }) {
-    croak('doclinks key defined but is not the expected arrayref')
-      unless ref $api->{doclinks} eq 'ARRAY';
-    croak(
-      'array of apis provided by available_APIs includes one without a defined name'
-    ) unless defined $api->{name};
-
-    my @clean_doclinks = grep { defined $_ }
-      @{ $api->{doclinks} }
-      ; ## was seeing undef in doclinks array - eg 'surveys'causing warnings in join
-
-    ## unique doclinks using idiom from https://www.oreilly.com/library/view/perl-cookbook/1565922433/ch04s07.html
-    my %seen     = ();
-    my $doclinks = join(',', (grep { !$seen{$_}++ } @clean_doclinks))
-      || '';    ## unique doclinks as string
-
-    $ret
-      .= $api->{name} . ' : '
-      . join(',', @{ $api->{versions} }) . ' : '
-      . $doclinks . "\n";
-  }
-  return $ret;
+  return unless $api;
+  return $self->available_APIs->{$api}
 }
 
 =head2 C<available_versions>
 
   Show available versions of particular API described by api id passed as parameter such as 'gmail'
 
-  $d->available_versions('calendar');  # ['v3']
-  $d->available_versions('youtubeAnalytics');  # ['v1','v1beta1']
+  $disco->available_versions('calendar');  # ['v3']
+  $disco->available_versions('youtubeAnalytics');  # ['v1','v1beta1']
 
   Returns arrayref
 
@@ -446,9 +358,7 @@ sub supported_as_text {
 sub available_versions {
   my ($self, $api) = @_;
   return [] unless $api;
-  my @api_target = grep { $_->{name} eq $api } @{ $self->available_APIs() };
-  return [] if scalar(@api_target) == 0;
-  return $api_target[0]->{versions};
+  return $self->available_APIs->{$api}->{version} // []
 }
 
 =head2 C<latest_stable_version>
@@ -469,46 +379,38 @@ return latest stable verion of API
 sub latest_stable_version {
   my ($self, $api) = @_;
   return '' unless $api;
-  return '' unless $self->available_versions($api);
-  return '' unless @{ $self->available_versions($api) } > 0;
-  my $versions = $self->available_versions($api);    # arrayref
-  if ($versions->[-1] =~ /beta/) {
-    return $versions->[0];
-  } else {
-    return $versions->[-1];
-  }
+  my $versions = $self->available_versions($api);
+  return '' unless $versions;
+  return '' unless @{ $versions } > 0;
+  #remove alpha or beta versions
+  my @stable = grep { !/beta|alpha/ } @$versions;
+  return $stable[-1] || '';
 }
 
+=head2 C<get_method_details>
 
-########################################################
-sub api_version_urls {
-  my ($self) = @_;
-  ## transform structure to be keyed on api->versionRestUrl
-  my $aapis           = $self->available_APIs();
-  my $api_verson_urls = {};
-  for my $api (@{$aapis}) {
-    for (my $i = 0; $i < scalar @{ $api->{versions} }; $i++) {
-      $api_verson_urls->{ $api->{name} }{ $api->{versions}[$i] }
-        = $api->{discoveryRestUrl}[$i];
-    }
-  }
-  return $api_verson_urls;
-}
-########################################################
-
-=head2 C<extract_method_discovery_detail_from_api_spec>
-
-    $agent->extract_method_discovery_detail_from_api_spec( $tree, $api_version )
+    $disco->get_method_details($tree, $api_version)
 
 returns a hashref representing the discovery specification for the method identified by $tree in dotted API format such as texttospeech.text.synthesize
 
-returns an empty hashref if not found
+returns an empty hashref if not found.
 
+Also available as C<extract_method_discovery_detail_from_api_spec>, but the long name is being
+deprecated in favor of the more compact one.
 =cut
 
 
 ########################################################
 sub extract_method_discovery_detail_from_api_spec {
+  carp <<DEPRECATION;
+This rather long method name
+(extract_method_discovery_detail_from_api_spec) is being
+deprecated in favor of get_method_details. Please switch soon
+DEPRECATION
+  shift->get_method_details(@_)
+}
+
+sub get_method_details {
   my ($self, $tree, $api_version) = @_;
   ## where tree is the method in format from _extract_resource_methods_from_api_spec() like projects.models.versions.get
   ##   the root is the api id - further '.' sep levels represent resources until the tailing label that represents the method
@@ -542,7 +444,7 @@ sub extract_method_discovery_detail_from_api_spec {
 
 
   ## TODO: confirm that spec available for api version
-  my $api_spec = $self->get_api_discovery_for_api_id(
+  my $api_spec = $self->get_api_document(
     { api => $api_id, version => $api_version });
 
 
@@ -624,7 +526,7 @@ sub _extract_resource_methods_from_api_spec {
 # ->{response}{ $schemas->{Buckets} }
 #
 # It assumes that the schemas have been extracted from the original discover for the API
-# and is typically applued to the method ( api endpoint ) to provide a fully descriptive
+# and is typically applied to the method ( api endpoint ) to provide a fully descriptive
 # structure without external references.
 #
 #=cut
@@ -686,7 +588,6 @@ representing the corresponding discovery specification for that method ( API End
 #  get_api_discovery_for_api_id
 
 ########################################################
-## TODO: consider renaming ?
 sub methods_available_for_google_api_id {
   my ($self, $api_id, $version) = @_;
 
@@ -701,36 +602,36 @@ sub methods_available_for_google_api_id {
 ########################################################
 
 
-=head2 C<list_of_available_google_api_ids>
+=head2 C<list_api_ids>
 
 Returns an array list of all the available API's described in the API Discovery Resource
 that is either fetched or cached in CHI locally for 30 days.
 
-    my $r = $agent->list_of_available_google_api_ids();
+    my $r = $agent->list_api_ids();
     print "List of API Services ( comma separated): $r\n";
 
-    my @list = $agent->list_of_available_google_api_ids();
+    my @list = $agent->list_api_ids();
+
+Formerly was list_of_available_google_api_ids, which will now give a deprecation warning
+to switch to list_api_ids.
 
 =cut
 
-########################################################
-## returns a list of all available API Services
 sub list_of_available_google_api_ids {
-  my ($self)   = @_;
-  my $aapis    = $self->available_APIs();      ## array of hashes
-  my @api_list = map { $_->{name} } @$aapis;
-  return
-    wantarray
-    ? @api_list
-    : join(',', @api_list)
-    ;    ## allows to be called in either list or scalar context
-         #return @api_list;
-
+  carp <<DEPRECATION;
+This rather long function name (list_of_available_google_api_ids)
+is being deprecated in favor of the shorter list_api_ids. Please
+update your code accordingly.
+DEPRECATION
+  shift->list_api_ids
 }
-########################################################
+## returns a list of all available API Services
+sub list_api_ids {
+  my ($self)   = @_;
+  my @api_list = keys %{$self->available_APIs};
+  return wantarray ? @api_list
+    : join(',', @api_list);
+}
 
 
 1;
-
-## TODO - CODE REVIEW
-## get_expires_at .. does this do what is expected ? - what if has expired and so get fails - will this still return a value?

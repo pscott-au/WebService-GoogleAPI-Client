@@ -91,23 +91,48 @@ Package includes I<go_auth> CLI Script to collect initial end-user authorisation
 
 =cut
 
-has 'debug' => ( is => 'rw', default => 0, lazy => 1 );    ## NB - when udpated change doesn't propogate !
-has 'ua' => (
-  handles => [qw/access_token auth_storage  do_autorefresh get_scopes_as_array user /],
-  is      => 'ro',
-  default => sub { WebService::GoogleAPI::Client::UserAgent->new( debug => shift->debug ) },
-  lazy    => 1,
+has 'debug' => (
+  is => 'rw',
+  default => 0,
+  lazy => 1
 );
-has 'chi' => ( is => 'rw', default => sub { CHI->new( driver => 'File', max_key_length => 512, namespace => __PACKAGE__ ) }, lazy => 1 );
+has 'ua'    => (
+  handles =>
+    [qw/access_token auth_storage  do_autorefresh get_scopes_as_array user /],
+  is => 'ro',
+  default =>
+    sub { WebService::GoogleAPI::Client::UserAgent->new(debug => shift->debug) }
+  ,
+  lazy => 1,
+);
+
+has 'chi' => (
+  is      => 'rw',
+  default => sub {
+    CHI->new(
+      driver => 'File',
+      max_key_length => 512,
+      namespace => __PACKAGE__
+    );
+  },
+  lazy => 1
+);
+
 has 'discovery' => (
   handles => [
-    qw/  discover_all extract_method_discovery_detail_from_api_spec get_api_discovery_for_api_id
-      methods_available_for_google_api_id list_of_available_google_api_ids  /  ## get_method_meta 
+    qw/  discover_all
+      get_method_details
+      get_api_document service_exists
+      methods_available_for_google_api_id list_api_ids  /
   ],
   is      => 'ro',
   default => sub {
     my $self = shift;
-    return WebService::GoogleAPI::Client::Discovery->new( debug => $self->debug, ua => $self->ua, chi => $self->chi );
+    return WebService::GoogleAPI::Client::Discovery->new(
+      debug => $self->debug,
+      ua    => $self->ua,
+      chi   => $self->chi
+    );
   },
   lazy => 1,
 );
@@ -369,10 +394,10 @@ sub _process_params_for_api_endpoint_and_return_errors
 
   croak('this should never happen - this method is internal only!') unless defined $params->{ api_endpoint_id };
   
-  my $api_discovery_struct    = $self->_ensure_api_spec_has_defined_fields( $self->discovery->get_api_discovery_for_api_id( $params->{ api_endpoint_id } ) );       ## $api_discovery_struct requried for service base URL
+  my $api_discovery_struct    = $self->_ensure_api_spec_has_defined_fields( $self->discovery->get_api_document( $params->{ api_endpoint_id } ) );       ## $api_discovery_struct requried for service base URL
   $api_discovery_struct->{ baseUrl } =~ s/\/$//sxmg;    ## remove trailing '/' from baseUrl
   
-  my $method_discovery_struct = $self->extract_method_discovery_detail_from_api_spec( $params->{ api_endpoint_id } ); ## if can get discovery data for google api endpoint then continue to perform detailed checks
+  my $method_discovery_struct = $self->get_method_details( $params->{ api_endpoint_id } ); ## if can get discovery data for google api endpoint then continue to perform detailed checks
 
   #save away original path so we can know if it's fiddled with
   #later
@@ -536,7 +561,7 @@ sub has_scope_to_access_api_endpoint
   my ( $self, $api_ep ) = @_;
   return 0 unless defined $api_ep;
   return 0 if $api_ep eq '';
-  my $method_spec = $self->extract_method_discovery_detail_from_api_spec( $api_ep );
+  my $method_spec = $self->get_method_details( $api_ep );
 
   if ( keys( %$method_spec ) > 0 )    ## empty hash indicates failure
   {
@@ -627,13 +652,13 @@ sub has_scope_to_access_api_endpoint
 
 
 
-=head2 C<get_api_discovery_for_api_id>
+=head2 C<get_api_document>
 
 returns the cached version if avaiable in CHI otherwise retrieves discovery data via HTTP, stores in CHI cache and returns as
 a Perl data structure.
 
-    my $hashref = $self->get_api_discovery_for_api_id( 'gmail' );
-    my $hashref = $self->get_api_discovery_for_api_id( 'gmail:v3' );
+    my $hashref = $self->get_api_document( 'gmail' );
+    my $hashref = $self->get_api_document( 'gmail:v3' );
 
 returns the api discovery specification structure ( cached by CHI ) for api id ( eg 'gmail ')
 
@@ -649,25 +674,26 @@ discovery specification for that method ( API Endpoint ).
     methods_available_for_google_api_id('gmail')
 
 
-=head2 C<extract_method_discovery_detail_from_api_spec>
+=head2 C<get_method_details>
 
-    $my $api_detail = $gapi->discovery->extract_method_discovery_detail_from_api_spec( 'gmail.users.settings' );
+    $my $api_detail = $gapi->discovery->get_method_details( 'gmail.users.settings' );
 
 returns a hashref representing the discovery specification for the method identified by $tree in dotted API format such as texttospeech.text.synthesize
 
 returns an empty hashref if not found
 
 
-=head2 C<list_of_available_google_api_ids>
+=head2 C<list_api_ids>
 
 Returns an array list of all the available API's described in the API Discovery Resource
 that is either fetched or cached in CHI locally for 30 days.
 
-    my $r = $agent->list_of_available_google_api_ids();
+    my $r = $agent->list_api_ids();
     print "List of API Services ( comma separated): $r\n";
 
-    my @list = $agent->list_of_available_google_api_ids();
+    my @list = $agent->list_api_ids();
 
+To check for just one service id, use C<service_exists> instead.
 
 =head1 FEATURES
 
