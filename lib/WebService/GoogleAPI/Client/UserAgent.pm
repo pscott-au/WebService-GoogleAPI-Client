@@ -184,26 +184,20 @@ sub validated_api_query
   
   ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction
   
-  ## TODO: 
-#  return Mojo::Message::Response->new unless ref( $res ) eq 'Mojo::Message::Response';
+  ## TODO: return Mojo::Message::Response->new unless ref( $res ) eq 'Mojo::Message::Response';
 
-  if ( ( $res->code == 401 ) && $self->do_autorefresh )
-  {
-    if ( $res->code == 401 )     ## redundant - was there something else in mind ?
+  if ( ( $res->code == 401 ) && $self->do_autorefresh ) {
+    if ( $res->code == 401 ) {     ## redundant - was there something else in mind ?
     #TODO- I'm fairly certain this fires too often
-    {
       croak "No user specified, so cant find refresh token and update access_token" unless $self->user;
       cluck "401 response - access_token was expired. Attemptimg to update it automatically ..." if  ($self->debug > 11);
-
-      # cluck "Seems like access_token was expired. Attemptimg update it automatically ..." if $self->debug;
 
       my $cred      = $self->auth_storage->get_credentials_for_refresh( $self->user );    # get client_id, client_secret and refresh_token
       my $new_token = $self->refresh_access_token( $cred )->{ access_token };             # here also {id_token} etc
       cluck "validated_api_query() Got a new token: " . $new_token if ($self->debug > 11);
       $self->access_token( $new_token );
 
-      if ( $self->auto_update_tokens_in_storage )
-      {
+      if ( $self->auto_update_tokens_in_storage ) {
         $self->auth_storage->set_access_token_to_storage( $self->user, $self->access_token );
       }
 
@@ -212,8 +206,7 @@ sub validated_api_query
       $res = $self->start( $self->build_http_transaction( $params ) )->res;               # Mojo::Message::Response
     }
   }
-  elsif ( $res->code == 403 )
-  {
+  elsif ( $res->code == 403 ) {
     cluck( 'Unexpected permission denied 403 error ' );
     return $res;
   }
