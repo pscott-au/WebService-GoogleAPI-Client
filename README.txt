@@ -13,7 +13,7 @@ SYNOPSIS
     Includes Discovery, validation authentication and API Access.
 
     assumes gapi.json configuration in working directory with scoped Google
-    project redentials and user authorization created by _goauth_
+    project credentials and user authorization created by _goauth_
 
         use WebService::GoogleAPI::Client;
         
@@ -281,14 +281,14 @@ METHODS DELEGATED TO WebService::GoogleAPI::Client::Discovery
         }
         print dump $new_hash->{gmail};
 
- get_api_discovery_for_api_id
+ get_api_document
 
     returns the cached version if avaiable in CHI otherwise retrieves
     discovery data via HTTP, stores in CHI cache and returns as a Perl data
     structure.
 
-        my $hashref = $self->get_api_discovery_for_api_id( 'gmail' );
-        my $hashref = $self->get_api_discovery_for_api_id( 'gmail:v3' );
+        my $hashref = $self->get_api_document( 'gmail' );
+        my $hashref = $self->get_api_document( 'gmail:v3' );
 
     returns the api discovery specification structure ( cached by CHI ) for
     api id ( eg 'gmail ')
@@ -304,9 +304,9 @@ METHODS DELEGATED TO WebService::GoogleAPI::Client::Discovery
 
         methods_available_for_google_api_id('gmail')
 
- extract_method_discovery_detail_from_api_spec
+ get_method_details
 
-        $my $api_detail = $gapi->discovery->extract_method_discovery_detail_from_api_spec( 'gmail.users.settings' );
+        $my $api_detail = $gapi->discovery->get_method_details( 'gmail.users.settings' );
 
     returns a hashref representing the discovery specification for the
     method identified by $tree in dotted API format such as
@@ -314,16 +314,18 @@ METHODS DELEGATED TO WebService::GoogleAPI::Client::Discovery
 
     returns an empty hashref if not found
 
- list_of_available_google_api_ids
+ list_api_ids
 
     Returns an array list of all the available API's described in the API
     Discovery Resource that is either fetched or cached in CHI locally for
     30 days.
 
-        my $r = $agent->list_of_available_google_api_ids();
+        my $r = $agent->list_api_ids();
         print "List of API Services ( comma separated): $r\n";
     
-        my @list = $agent->list_of_available_google_api_ids();
+        my @list = $agent->list_api_ids();
+
+    To check for just one service id, use service_exists instead.
 
 FEATURES
 

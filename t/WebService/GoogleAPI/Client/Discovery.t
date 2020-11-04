@@ -167,7 +167,7 @@ subtest 'checking for API availablity' => sub {
     field gmail => hash {
       field version => bag { item 'v1'; etc; };
       field documentationLink => bag { item 'https://developers.google.com/gmail/api/'; etc; };
-      field discoveryRestUrl => bag { item 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'; etc; };
+      field discoveryRestUrl => bag { item 'https://gmail.googleapis.com/$discovery/rest?version=v1'; etc; };
       end;
     };
     etc;
@@ -183,7 +183,7 @@ subtest 'checking for API availablity' => sub {
   subtest 'available_version' => sub {
     is $disco->available_versions('gmail'), [ 'v1' ], 'got gmail';
     is $disco->available_versions('GMAIL'), [], 'case sensitive gmail';
-    is $disco->available_versions('firestore'), [ qw/v1 v1beta1 v1beta2/ ],
+    is $disco->available_versions('firestore'), bag { item $_ for qw/v1 v1beta1 v1beta2/; end },
       'got many versions for firestore';
     is $disco->available_versions('youtubeAnalytics'), [ qw/v1 v2/ ],
       'got many for youtube analytics';
