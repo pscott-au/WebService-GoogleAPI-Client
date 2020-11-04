@@ -29,4 +29,5 @@ examples/*.png
 *.json
 docs/cover/*
 
+.yath.user.rc
 .*.sw?
