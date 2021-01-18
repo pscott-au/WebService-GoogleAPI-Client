@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Exporter::Shiny qw/ gapi_json DEBUG user has_credentials set_credentials/;
-use Mojo::File qw/ curfile path/;
+use Mojo::File qw/curfile path/;
 
 my $gapi;
 #try and find a good gapi.json to use here. Check as follows:
@@ -13,7 +13,7 @@ my $gapi;
 #     author tests can find the one in our main folder 
 #  4) the main dir of this project
 #  5) the fake one in the t/ directory
-$gapi = path($ENV{GOOGLE_TOKENSFILE} || 'gapi.json');
+$gapi = path($ENV{GOOGLE_TOKENSFILE} || './gapi.json');
 $gapi = curfile->dirname->dirname->dirname->sibling('gapi.json')
   unless $gapi->stat;
 $gapi = curfile->dirname->dirname->sibling('gapi.json')

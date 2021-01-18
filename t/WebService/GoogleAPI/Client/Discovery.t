@@ -33,6 +33,7 @@ subtest 'WebService::GoogleAPI::Client::Discovery class properties' => sub {
 $disco->debug(DEBUG);
 
 #TODO- mock away the actual get request...
+# will prevent the occasional flake on this in the future
 subtest 'discover_all' => sub {
   subtest 'hits the wire with no cache' => sub {
     like $disco->discover_all->{items}, bag {
