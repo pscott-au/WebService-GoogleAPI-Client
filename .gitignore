@@ -31,3 +31,4 @@ docs/cover/*
 
 .yath.user.rc
 .*.sw?
+.perl-version

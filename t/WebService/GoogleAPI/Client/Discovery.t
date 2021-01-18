@@ -185,8 +185,8 @@ subtest 'checking for API availablity' => sub {
     is $disco->available_versions('GMAIL'), [], 'case sensitive gmail';
     is $disco->available_versions('firestore'), bag { item $_ for qw/v1 v1beta1 v1beta2/; end },
       'got many versions for firestore';
-    is $disco->available_versions('youtubeAnalytics'), [ qw/v1 v2/ ],
-      'got many for youtube analytics';
+    is $disco->available_versions('youtubeAnalytics'), [ 'v2' ],
+      'got correct only one version for youtube analytics';
     is $disco->available_versions('yourfez'), [], 'empty for non-existant';
   };
 

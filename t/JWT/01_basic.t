@@ -107,6 +107,7 @@ is $jwt->from_json( "$testdir/load4.json" ), 0, 'must be for service account';
 $jwt = WebService::GoogleAPI::JWT->new;
 is $jwt->client_email('mysa@developer.gserviceaccount.com'), $jwt, 'sa set';
 $jwt->expires('9999999999');
+$jwt->secret('hi');
 
 my $jwte = $jwt->encode;
 my $jwtd = $jwt->decode($jwte);
