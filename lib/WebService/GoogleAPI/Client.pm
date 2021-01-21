@@ -177,8 +177,7 @@ somewhat. I haven't fully implemented ADC yet - see
 L<Google's Docs|https://cloud.google.com/docs/authentication/production> for some details. PRs
 are welcome!)
 
-
-If that doesn't exist, then we default to gapi.json in the current directory.
+If that doesn't exist, then we default to F<gapi.json> in the current directory.
 
 B<Be wary!> This default is subject to change as more storage backends are implemented.
 A deprecation warning will be emmitted when this is likely to start happening.
