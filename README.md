@@ -97,7 +97,7 @@ I was unable to get the [Dist::Zilla](https://metacpan.org/pod/Dist::Zilla) pack
     my $gapi = WebService::GoogleAPI::Client->new(debug => 0);
     
     ## This idiom selects the first authorised user from gapi.json 
-    my $aref_token_emails = $gapi->auth_storage->storage->get_token_emails_from_storage;
+    my $aref_token_emails = $gapi->auth_storage->get_token_emails_from_storage;
     my $user = $aref_token_emails->[0];
     print "Running tests with default user email = $user\n";
     $gapi->user($user);

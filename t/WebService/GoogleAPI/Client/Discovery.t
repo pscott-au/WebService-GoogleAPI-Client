@@ -377,7 +377,7 @@ subtest 'Discovery methods with User Configuration' => sub {
 #ok( ref $gapi->auth_storage->setup( { type => 'jsonfile', path => $default_file } ) eq 'WebService::GoogleAPI::Client::AuthStorage', 'auth_storage returns WebService::GoogleAPI::Client::AuthStorage');
 
   ok( my $gapi = WebService::GoogleAPI::Client->new( debug => $DEBUG, gapi_json => $default_file ), 'Creating test session instance of WebService::GoogleAPI::Client' );
-  ok( my $aref_token_emails = $gapi->auth_storage->storage->get_token_emails_from_storage, 'Load token emails from config' );
+  ok( my $aref_token_emails = $gapi->auth_storage->get_token_emails_from_storage, 'Load token emails from config' );
   if ( !$user )    ## default to the first user in config file if none defined yet
   {
     ok( $user = $aref_token_emails->[0], "setting test user to first configured entry in config - '$user'" );
