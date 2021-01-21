@@ -3,14 +3,14 @@
 use strictures;
 use Data::Printer;
 use Mojo::UserAgent;
-use WebService::GoogleAPI::JWT;
+use Mojo::JWT::Google;
 
 my $config = {
     path => $ARGV[0] // '/Users/peter/Downloads/computerproscomau-b9f59b8ee34a.json',
     scopes => $ARGV[1] //  'https://www.googleapis.com/auth/plus.business.manage https://www.googleapis.com/auth/compute'
 };
 
-my $jwt = WebService::GoogleAPI::JWT->new( from_json => $config->{path}, scopes => [ split / /, $config->{scopes} ] );
+my $jwt = Mojo::JWT::Google->new( from_json => $config->{path}, scopes => [ split / /, $config->{scopes} ] );
 
 my $ua = Mojo::UserAgent->new(); 
 
