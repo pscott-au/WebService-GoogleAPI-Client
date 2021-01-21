@@ -2,22 +2,23 @@ use strictures;
 
 package WebService::GoogleAPI::Client::Credentials;
 
-# ABSTRACT: Credentials for particular Client instance. You can use this module as singleton also if you need to share
-#           credentials between two or more modules
+# ABSTRACT: Credentials for particular Client instance. You can use this module
+# as singleton also if you need to share credentials between two or more
+# instances
 
 
 use Carp;
 use Moo;
-use WebService::GoogleAPI::Client::AuthStorage;
+use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
 with 'MooX::Singleton';
 
 
 has 'access_token' => ( is => 'rw' );
-# TODO - service accounts can impersonate a user, but don't need to
-has 'user'         => ( is => 'rw', trigger => \&get_access_token_for_user );                                # full gmail, like peter@shotgundriver.com
+has 'user'         => ( is => 'rw', trigger => \&get_access_token_for_user );
 has 'auth_storage' => 
   is => 'rw',
-  default => sub { WebService::GoogleAPI::Client::AuthStorage->new };    # dont delete to able to configure
+  default => sub { WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new },
+  lazy => 1;
 
 =method get_access_token_for_user
 

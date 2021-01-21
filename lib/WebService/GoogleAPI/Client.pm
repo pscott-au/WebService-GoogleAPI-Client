@@ -7,6 +7,8 @@ use Data::Dump qw/pp/;
 use Moo;
 use WebService::GoogleAPI::Client::UserAgent;
 use WebService::GoogleAPI::Client::Discovery;
+use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
+use WebService::GoogleAPI::Client::AuthStorage::ServiceAccount;
 use Carp;
 use CHI;
 use Mojo::Util;
@@ -55,7 +57,7 @@ credentials and user authorization created by _goauth_
 
 Internal User Agent provided be property WebService::GoogleAPI::Client::UserAgent dervied from Mojo::UserAgent
 
-Package includes I<go_auth> CLI Script to collect initial end-user authorisation to scoped services
+Package includes I<goauth> CLI Script to collect initial end-user authorisation to scoped services
 
 =head1 EXAMPLES
 
@@ -66,18 +68,21 @@ Package includes I<go_auth> CLI Script to collect initial end-user authorisation
     use MIME::Base64;
     my $my_email_address = 'peter@shotgundriver.com'
 
+    my $raw_email_payload = encode_base64(
+      Email::Simple->create(
+        header => [
+          To      => $my_email_address,
+          From    => $my_email_address,
+          Subject => "Test email from '$my_email_address' ",
+        ],
+        body => "This is the body of email to '$my_email_address'",
+      )->as_string
+    );
 
-    my $raw_email_payload = encode_base64( Email::Simple->create( 
-             header => [To => $my_email_address, From => $my_email_address, 
-                        Subject =>"Test email from '$my_email_address' ",], 
-             body => "This is the body of email to '$my_email_address'", 
-           )->as_string 
-        );
-
-    $gapi_client->api_query( 
-                            api_endpoint_id => 'gmail.users.messages.send',
-                            options    => { raw => $raw_email_payload },
-                        );
+    $gapi_client->api_query(
+      api_endpoint_id => 'gmail.users.messages.send',
+      options         => { raw => $raw_email_payload },
+    );
 
 
 =head2 MANUAL API REQUEST CONSTRUCTION - GET CALENDAR LIST
@@ -204,27 +209,31 @@ won't work.
 
 =cut
 
-sub BUILD {
-  my ($self, $params) = @_;
-
-  if (defined $params->{gapi_json}) {
-    $self->auth_storage->setup(
-      { type => 'jsonfile', path => $params->{gapi_json} });
-  } elsif (defined $params->{service_account}) {
-    $self->auth_storage->setup(
-      { type => 'servicefile', path => $params->{service_account} });
-  } elsif (my $file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
-    $self->auth_storage->setup({ type => 'servicefile', path => $file });
-  }
-
 #NOTE- in terms of implementing google's ADC
 # (see https://cloud.google.com/docs/authentication/production and also
 #  https://github.com/googleapis/python-cloud-core/blob/master/google/cloud/client.py)
 # I looked into it and based on that, it seems that every environment has different reqs,
 #  so it's a maintenance liability
-  $self->user($params->{user}) if (defined $params->{user});
+sub BUILD {
+  my ($self, $params) = @_;
 
-  ## TODO - think about consequences of user not providing auth storage or user on instantiaton
+  if (defined $params->{gapi_json}) {
+    $self->auth_storage(
+      WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new(path => $params->{gapi_json})
+    );
+  } elsif (defined $params->{service_account}) {
+    $self->auth_storage(
+      WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
+        path => $params->{service_account})
+    );
+  } elsif (my $file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
+    $self->auth_storage(
+      WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
+        path => $file)
+    );
+  }
+
+  $self->user($params->{user}) if (defined $params->{user});
 }
 
 =head2 C<api_query>

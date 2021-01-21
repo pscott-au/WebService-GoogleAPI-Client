@@ -8,6 +8,8 @@ use Moo;
 use Config::JSON;
 use Carp;
 
+with 'WebService::GoogleAPI::Client::AuthStorage';
+
 has 'path' => ( is => 'rw', default => 'gapi.json' );    # default is gapi.json
 
 has 'tokensfile' => ( is => 'rw' );  # Config::JSON object pointer
@@ -16,7 +18,7 @@ has 'debug' => ( is => 'rw', default => 0 );
 # NOTE- this type of class has getters and setters b/c the implementation of
 # getting and setting depends on what's storing
 
-sub setup {
+sub BUILD {
   my ($self) = @_;
   $self->tokensfile(Config::JSON->new($self->path));
   return $self;
@@ -67,14 +69,17 @@ sub set_access_token_to_storage {
 
 sub get_scopes_from_storage {
   my ($self) = @_;
-  return $self->tokensfile->get('gapi/scopes')
-    ;    ## NB - returns an array - is stored as space sep list
+  return $self->tokensfile->get('gapi/scopes');
 }
 
 sub get_scopes_from_storage_as_array {
-  my ($self) = @_;
-  return [split / /, $self->tokensfile->get('gapi/scopes')]
-    ;    ## NB - returns an array - is stored as space sep list
+  carp 'get_scopes_from_storage_as_array is being deprecated, please use the more succint scopes accessor';
+  return $_[0]->scopes
 }
 
+# NOTE - the scopes are stored as a space seperated list
+sub scopes {
+  my ($self) = @_;
+  return [split / /, $self->tokensfile->get('gapi/scopes')];
+}
 1;

@@ -9,16 +9,15 @@ package WebService::GoogleAPI::Client::AuthStorage;
 
 ## or is UserAgent->credentials
 
-use Moo;
+use Moo::Role;
 use Carp;
-use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
 
-
-has 'storage' =>
-  is => 'rw',
-  default => sub { WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new } );    # by default
-has 'is_set' => ( is => 'rw', default => 0 );
-
+requires qw/
+  refresh_token
+  get_access_token_from_storage
+  set_access_token_to_storage
+  scopes
+/;
 
 =method setup
 
@@ -59,26 +58,6 @@ $c->get_credentials_for_refresh('examplemail@gmail.com')
 This method must have all subclasses of WebService::GoogleAPI::Client::AuthStorage
 
 =cut
-
-sub get_credentials_for_refresh {
-  my ($self, $user) = @_;
-  return $self->storage->get_credentials_for_refresh($user);
-}
-
-sub get_access_token_from_storage {
-  my ($self, $user) = @_;
-  return $self->storage->get_access_token_from_storage($user);
-}
-
-sub set_access_token_to_storage {
-  my ($self, $user, $access_token) = @_;
-  return $self->storage->set_access_token_to_storage($user, $access_token);
-}
-
-sub get_scopes_from_storage_as_array {
-  my ($self) = @_;
-  return $self->storage->get_scopes_from_storage_as_array();
-}
 
 
 1;
