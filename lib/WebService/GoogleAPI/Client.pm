@@ -147,41 +147,55 @@ has 'discovery' => (
   WebService::GoogleAPI::Client->new(
      user => 'peter@pscott.com.au', gapi_json => '/fullpath/gapi.json' );
 
-=head3 General parameters
+=head3 B<General parameters>
 
-=over
+=over 4
 
-debug - if truthy then diagnostics are send to STDERR - default false. Crank it
-up to 11 for maximal debug output
+=item debug
 
-chi - an instance to a CHI persistent storage case object - if none provided FILE is used
+if truthy then diagnostics are send to STDERR - default false. Crank it up to 11
+for maximal debug output
+
+=item chi
+
+an instance to a CHI persistent storage case object - if none provided FILE is used
 
 =back
 
-=head3 Login Parameters
+=head3 B<Login Parameters>
 
 You can use either gapi_json, which is the file you get from using the bundled
 goauth tool, or service_account which is the json file you can download from
 https://console.cloud.google.com/iam-admin/serviceaccounts.
 
+service_account and gapi_json are mutually exclusive, and gapi_json takes precedence.
+
 If nothing is passed, then we check the GOOGLE_APPLICATION_CREDENTIALS env
 variable for the location of a service account file. This matches the
 functionality of the Google Cloud libraries from other languages (well,
 somewhat. I haven't fully implemented ADC yet - see
-https://cloud.google.com/docs/authentication/production for some details. PRs
+L<Google's Docs|https://cloud.google.com/docs/authentication/production> for some details. PRs
 are welcome!)
+
 
 If that doesn't exist, then we default to gapi.json in the current directory.
 
-service_account and gapi_json are mutually exclusive, and gapi_json takes precedence.
+B<Be wary!> This default is subject to change as more storage backends are implemented.
+A deprecation warning will be emmitted when this is likely to start happening.
 
-=over
+=over 4
 
-user - the email address that requests will be made for
+=item user
 
-gapi_json - Location of end user credentials
+the email address that requests will be made for
 
-service_account - Location of service account credentials
+=item gapi_json
+
+Location of end user credentials
+
+=item service_account
+
+Location of service account credentials
 
 =back
 
@@ -199,9 +213,9 @@ sub BUILD {
       { type => 'jsonfile', path => $params->{gapi_json} });
   } elsif (defined $params->{service_account}) {
     $self->auth_storage->setup(
-      { type => 'jsonfile', path => $params->{service_account} });
+      { type => 'servicefile', path => $params->{service_account} });
   } elsif (my $file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
-    $self->auth_storage->setup({ type => 'jsonfile', path => $file });
+    $self->auth_storage->setup({ type => 'servicefile', path => $file });
   }
 
 #NOTE- in terms of implementing google's ADC

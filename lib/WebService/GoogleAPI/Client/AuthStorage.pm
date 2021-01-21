@@ -14,7 +14,9 @@ use Carp;
 use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
 
 
-has 'storage' => ( is => 'rw', default => sub { WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new } );    # by default
+has 'storage' =>
+  is => 'rw',
+  default => sub { WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new } );    # by default
 has 'is_set' => ( is => 'rw', default => 0 );
 
 
@@ -29,17 +31,18 @@ Set appropriate storage
 
 =cut
 
-sub setup
-{
-  my ( $self, $params ) = @_;
-  if ( $params->{ type } eq 'jsonfile' )
-  {
-    $self->storage->path( $params->{ path } );
+sub setup {
+  my ($self, $params) = @_;
+  if ($params->{type} eq 'jsonfile') {
+    $self->storage->path($params->{path});
     $self->storage->setup;
-    $self->is_set( 1 );
-  }
-  else
-  {
+    $self->is_set(1);
+  } elsif ($params->{type} eq 'servicefile') {
+    $self->storage(
+      WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(path => $path);
+    );
+    $self->is_set(1);
+  } else {
     croak "Unknown storage type.";
   }
   return $self;
@@ -57,28 +60,23 @@ This method must have all subclasses of WebService::GoogleAPI::Client::AuthStora
 
 =cut
 
-sub get_credentials_for_refresh
-{
-  my ( $self, $user ) = @_;
-  return $self->storage->get_credentials_for_refresh( $user );
+sub get_credentials_for_refresh {
+  my ($self, $user) = @_;
+  return $self->storage->get_credentials_for_refresh($user);
 }
 
-sub get_access_token_from_storage
-{
-  my ( $self, $user ) = @_;
-  return $self->storage->get_access_token_from_storage( $user );
+sub get_access_token_from_storage {
+  my ($self, $user) = @_;
+  return $self->storage->get_access_token_from_storage($user);
 }
 
-sub set_access_token_to_storage
-{
-  my ( $self, $user, $access_token ) = @_;
-  return $self->storage->set_access_token_to_storage( $user, $access_token );
+sub set_access_token_to_storage {
+  my ($self, $user, $access_token) = @_;
+  return $self->storage->set_access_token_to_storage($user, $access_token);
 }
 
-
-sub get_scopes_from_storage_as_array
-{
-  my ( $self ) = @_;
+sub get_scopes_from_storage_as_array {
+  my ($self) = @_;
   return $self->storage->get_scopes_from_storage_as_array();
 }
 

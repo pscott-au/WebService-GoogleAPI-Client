@@ -8,13 +8,16 @@ package WebService::GoogleAPI::Client::Credentials;
 
 use Carp;
 use Moo;
+use WebService::GoogleAPI::Client::AuthStorage;
 with 'MooX::Singleton';
 
 
 has 'access_token' => ( is => 'rw' );
 # TODO - service accounts can impersonate a user, but don't need to
 has 'user'         => ( is => 'rw', trigger => \&get_access_token_for_user );                                # full gmail, like peter@shotgundriver.com
-has 'auth_storage' => ( is => 'rw', default => sub { WebService::GoogleAPI::Client::AuthStorage->new } );    # dont delete to able to configure
+has 'auth_storage' => 
+  is => 'rw',
+  default => sub { WebService::GoogleAPI::Client::AuthStorage->new };    # dont delete to able to configure
 
 =method get_access_token_for_user
 
