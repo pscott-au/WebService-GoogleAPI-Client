@@ -30,7 +30,7 @@ SYNOPSIS
     Internal User Agent provided be property
     WebService::GoogleAPI::Client::UserAgent dervied from Mojo::UserAgent
 
-    Package includes go_auth CLI Script to collect initial end-user
+    Package includes goauth CLI Script to collect initial end-user
     authorisation to scoped services
 
 EXAMPLES

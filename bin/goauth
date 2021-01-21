@@ -42,14 +42,14 @@ Once installed as part of the WebService::GoogleAPI::Client bundle, this tool ca
 configuration that allows authenticated and authorised users to grant permission to access Google API services on their data (Email, Files etc) to the extent
 provided by the Access Scopes for the project and the auth tokens.
 
-In order to successfully run _go_auth_ for the first time requires the following Google Project configuration variables:
+In order to successfully run _goauth_ for the first time requires the following Google Project configuration variables:
 Client ID
 Client Secret
 List of Scopes to request access to on behalf of users ( must be a subset of those enabled for the project. )
 
 If not already available in the gapi.json file, you will be prompted to supply these as the file is created.
 
-Once this configuration is complete, the go_auth tool will launch a  mini HTTP server to provide an interface to request users to authorise your project application.
+Once this configuration is complete, the goauth tool will launch a  mini HTTP server to provide an interface to request users to authorise your project application.
 
 NB: To run successfully your Google Project must be configured to accept requests from the domain. For initial testing ensure that you include localhost in your allowed domains.
 
