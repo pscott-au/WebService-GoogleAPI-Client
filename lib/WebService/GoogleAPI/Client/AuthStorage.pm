@@ -38,7 +38,7 @@ sub setup {
     $self->is_set(1);
   } elsif ($params->{type} eq 'servicefile') {
     $self->storage(
-      WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(path => $path);
+      WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(path => $params->{path})
     );
     $self->is_set(1);
   } else {

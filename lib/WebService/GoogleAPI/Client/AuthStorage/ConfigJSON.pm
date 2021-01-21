@@ -24,6 +24,7 @@ sub BUILD {
   return $self;
 }
 
+sub refresh_token { ... } # TODO
 sub get_credentials_for_refresh {
   my ($self, $user) = @_;
   return {

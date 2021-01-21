@@ -28,23 +28,13 @@ Automatically get access_token for current user if auth_storage is set
 
 sub get_access_token_for_user {
   my ($self) = @_;
-  if ($self->auth_storage->is_set) {
-    # check that auth_storage initialized fine
-    $self->access_token(
-      $self->auth_storage->get_access_token_from_storage($self->user));
-  } else {
-    croak q/Can't get access token, Storage isn't set/;
-  }
+  $self->access_token($self->auth_storage->get_access_token_from_storage($self->user));
   return $self;
 }
 
 sub get_scopes_as_array {
   my ( $self ) = @_;
-  if ($self->auth_storage->is_set) {
-    $self->auth_storage->get_scopes_from_storage_as_array;
-  } else {
-    croak q/Can't get scopes, Storage isn't set/;
-  }
+  $self->auth_storage->get_scopes_from_storage_as_array;
 }
 
 1;
