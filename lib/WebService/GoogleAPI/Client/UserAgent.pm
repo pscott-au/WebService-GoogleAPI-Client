@@ -9,7 +9,6 @@ use Moo;
 extends 'Mojo::UserAgent';
 #extends 'Mojo::UserAgent::Mockable';
 use WebService::GoogleAPI::Client::Credentials;
-use WebService::GoogleAPI::Client::AuthStorage;
 use Mojo::UserAgent;
 use Data::Dump qw/pp/;    # for dev debug
 
@@ -241,7 +240,7 @@ sub refresh_access_token
     || ( !defined $credentials->{ refresh_token } )
     )
   {
-    croak 'If you credentials are missing the refresh_token - consider removing the auth at '
+    croak 'If your credentials are missing the refresh_token - consider removing the auth at '
       . 'https://myaccount.google.com/permissions as The oauth2 server will only ever mint one refresh '
       . 'token at a time, and if you request another access token via the flow it will operate as if '
       . 'you only asked for an access token.'

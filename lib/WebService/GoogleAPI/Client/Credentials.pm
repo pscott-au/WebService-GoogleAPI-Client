@@ -12,8 +12,7 @@ with 'MooX::Singleton';
 
 
 has 'access_token' => ( is => 'rw' );
-#TODO- user is a little bit imprecise, b/c a service account
-#doesn't necessarily have a user
+# TODO - service accounts can impersonate a user, but don't need to
 has 'user'         => ( is => 'rw', trigger => \&get_access_token_for_user );                                # full gmail, like peter@shotgundriver.com
 has 'auth_storage' => ( is => 'rw', default => sub { WebService::GoogleAPI::Client::AuthStorage->new } );    # dont delete to able to configure
 
@@ -38,13 +37,10 @@ sub get_access_token_for_user {
 sub get_scopes_as_array {
   my ( $self ) = @_;
   if ($self->auth_storage->is_set) {
-    return $self->access_token( $self->auth_storage->get_scopes_from_storage_as_array() );
+    $self->auth_storage->get_scopes_from_storage_as_array;
+  } else {
+    croak q/Can't get scopes, Storage isn't set/;
   }
-  else
-  {
-    croak q/Can't get access token for specified user because storage isn't set/;
-  }
-
 }
 
 1;
