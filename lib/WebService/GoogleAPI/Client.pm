@@ -144,31 +144,73 @@ has 'discovery' => (
 
 =head2 C<new>
 
-  WebService::GoogleAPI::Client->new( user => 'peter@pscott.com.au', gapi_json => '/fullpath/gapi.json' );
+  WebService::GoogleAPI::Client->new(
+     user => 'peter@pscott.com.au', gapi_json => '/fullpath/gapi.json' );
 
-=head3 PARAMETERS
+=head3 General parameters
 
-=head4 user :: the email address that identifies key of credentials in the config file
+=over
 
-=head4 gapi_json :: Location of the configuration credentials - default gapi.json
+debug - if truthy then diagnostics are send to STDERR - default false. Crank it
+up to 11 for maximal debug output
 
-=head4 debug :: if '1' then diagnostics are send to STDERR - default false
+chi - an instance to a CHI persistent storage case object - if none provided FILE is used
 
-=head4 chi :: an instance to a CHI persistent storage case object - if none provided FILE is used
+=back
 
+=head3 Login Parameters
+
+You can use either gapi_json, which is the file you get from using the bundled
+goauth tool, or service_account which is the json file you can download from
+https://console.cloud.google.com/iam-admin/serviceaccounts.
+
+If nothing is passed, then we check the GOOGLE_APPLICATION_CREDENTIALS env
+variable for the location of a service account file. This matches the
+functionality of the Google Cloud libraries from other languages (well,
+somewhat. I haven't fully implemented ADC yet - see
+https://cloud.google.com/docs/authentication/production for some details. PRs
+are welcome!)
+
+If that doesn't exist, then we default to gapi.json in the current directory.
+
+service_account and gapi_json are mutually exclusive, and gapi_json takes precedence.
+
+=over
+
+user - the email address that requests will be made for
+
+gapi_json - Location of end user credentials
+
+service_account - Location of service account credentials
+
+=back
+
+If you're using a service account, user represents the user that you're
+impersonating. Make sure you have domain-wide delegation set up, or else this
+won't work.
 
 =cut
 
-sub BUILD
-{
-  my ( $self, $params ) = @_;
+sub BUILD {
+  my ($self, $params) = @_;
 
-  #TODO- implement google standard way of finding the credentials
-  $self->auth_storage->setup( { type => 'jsonfile', path => $params->{ gapi_json } } ) if ( defined $params->{ gapi_json } );
-  $self->user( $params->{ user } ) if ( defined $params->{ user } );
+  if (defined $params->{gapi_json}) {
+    $self->auth_storage->setup(
+      { type => 'jsonfile', path => $params->{gapi_json} });
+  } elsif (defined $params->{service_account}) {
+    $self->auth_storage->setup(
+      { type => 'jsonfile', path => $params->{service_account} });
+  } elsif (my $file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
+    $self->auth_storage->setup({ type => 'jsonfile', path => $file });
+  }
 
-  ## how to handle chi as a parameter
-  $self->discovery->chi( $self->chi );    ## is this redundant? set in default?
+#NOTE- in terms of implementing google's ADC
+# (see https://cloud.google.com/docs/authentication/production and also
+#  https://github.com/googleapis/python-cloud-core/blob/master/google/cloud/client.py)
+# I looked into it and based on that, it seems that every environment has different reqs,
+#  so it's a maintenance liability
+  $self->user($params->{user}) if (defined $params->{user});
+
   ## TODO - think about consequences of user not providing auth storage or user on instantiaton
 }
 
