@@ -445,7 +445,7 @@ subtest 'Discovery methods with User Configuration' => sub {
     ok( keys %{ $gapi->extract_method_discovery_detail_from_api_spec( 'not-a-google-service.list' ) } == 0,
       "WebService::GoogleAPI::Client->extract_method_discovery_detail_from_api_spec('not-a-google-service.list') returns empty hashref" );
 
-    ok( scalar( [$gapi->get_scopes_as_array()] ) > 0, 'more than 0 scopes returned from config' );
+    ok @$gapi->scopes + 0, 'more than 0 scopes returned from config';
     ok(
       $gapi->has_scope_to_access_api_endpoint( "gmail.users.messages.send" ) =~ /^0|1$/xmg,
       'has_scope_to_access_api_endpoint("gmail.users.messages.send") returns either 0 or 1'

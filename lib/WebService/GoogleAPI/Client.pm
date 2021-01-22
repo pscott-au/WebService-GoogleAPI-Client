@@ -103,7 +103,7 @@ has 'debug' => (
 );
 has 'ua'    => (
   handles =>
-    [qw/access_token auth_storage  do_autorefresh get_scopes_as_array user /],
+    [qw/access_token auth_storage  do_autorefresh scopes user /],
   is => 'ro',
   default =>
     sub { WebService::GoogleAPI::Client::UserAgent->new(debug => shift->debug) }
@@ -629,7 +629,7 @@ sub has_scope_to_access_api_endpoint
 
   if ( keys( %$method_spec ) > 0 )    ## empty hash indicates failure
   {
-    my $configured_scopes = $self->ua->get_scopes_as_array();    ## get user scopes arrayref
+    my $configured_scopes = $self->scopes;    ## get user scopes arrayref
     ## create a hashindex to facilitate quick lookups
     my %configured_scopes_hash = map { s/\/$//xr, 1 } @$configured_scopes;    ## NB r switch as per https://www.perlmonks.org/?node_id=613280 to filter out any trailing '/'
     my $granted                = 0;                                           ## assume permission not granted until we find a matching scope

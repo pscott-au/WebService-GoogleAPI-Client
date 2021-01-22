@@ -182,7 +182,7 @@ if ( 1 == 0 )    ## - validate user scope for an api service endpoint string - i
   #print Dumper $foo;exit;
   ## list all user scopes configured
 
-  my $configured_scopes = $gapi_agent->get_scopes_as_array();    ## TODO rename to array_ref
+  my $configured_scopes = $gapi_agent->scopes;
   say "Scopes currently configured are: \n * " . join( "\n * ", @$configured_scopes );
   ## transform list into a hash so can do instant lookups
 

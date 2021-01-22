@@ -20,7 +20,7 @@ has 'debug'                         => ( is => 'rw', default => 0 );
 has 'credentials' => ( 
   is => 'rw', 
   default => sub { WebService::GoogleAPI::Client::Credentials->instance },
-  handles => [qw/access_token auth_storage get_scopes_as_array user /],
+  handles => [qw/access_token auth_storage scopes user/],
   lazy => 1 
 );
 

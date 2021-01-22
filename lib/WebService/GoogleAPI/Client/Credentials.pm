@@ -32,9 +32,9 @@ sub get_access_token_for_user {
   return $self;
 }
 
-sub get_scopes_as_array {
+sub scopes {
   my ( $self ) = @_;
-  $self->auth_storage->get_scopes_from_storage_as_array;
+  $self->auth_storage->scopes;
 }
 
 1;
