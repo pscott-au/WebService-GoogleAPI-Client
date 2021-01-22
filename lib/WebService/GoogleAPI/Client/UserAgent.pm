@@ -8,7 +8,7 @@ use Moo;
 
 extends 'Mojo::UserAgent';
 #extends 'Mojo::UserAgent::Mockable';
-use WebService::GoogleAPI::Client::Credentials;
+use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
 use Mojo::UserAgent;
 use Data::Dump qw/pp/;    # for dev debug
 
@@ -17,10 +17,10 @@ use Carp qw/croak carp cluck/;
 has 'do_autorefresh'                => ( is => 'rw', default => 1 );    # if 1 storage must be configured
 has 'auto_update_tokens_in_storage' => ( is => 'rw', default => 1 );
 has 'debug'                         => ( is => 'rw', default => 0 );
-has 'credentials' => ( 
+has 'auth_storage' => ( 
   is => 'rw', 
-  default => sub { WebService::GoogleAPI::Client::Credentials->instance },
-  handles => [qw/access_token auth_storage scopes user/],
+  default => sub { WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->instance },
+  handles => [qw/access_token scopes user/],
   lazy => 1 
 );
 

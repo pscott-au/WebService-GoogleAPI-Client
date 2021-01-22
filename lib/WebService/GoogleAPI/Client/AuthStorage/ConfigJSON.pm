@@ -10,10 +10,9 @@ use Carp;
 
 with 'WebService::GoogleAPI::Client::AuthStorage';
 
-has 'path' => ( is => 'rw', default => 'gapi.json' );    # default is gapi.json
+has 'path' => ( is => 'rw', default => './gapi.json' );    # default is gapi.json
 
 has 'tokensfile' => ( is => 'rw' );  # Config::JSON object pointer
-has 'debug' => ( is => 'rw', default => 0 );
 
 # NOTE- this type of class has getters and setters b/c the implementation of
 # getting and setting depends on what's storing
@@ -24,53 +23,37 @@ sub BUILD {
   return $self;
 }
 
-sub refresh_token { ... } # TODO
+sub refresh_access_token {
+  ... #TODO
+}
+
 sub get_credentials_for_refresh {
   my ($self, $user) = @_;
   return {
-    client_id     => $self->get_client_id_from_storage(),
-    client_secret => $self->get_client_secret_from_storage(),
-    refresh_token => $self->get_refresh_token_from_storage($user)
+    map { ( $_ => $self->get_from_storage($_) ) }
+      qw/client_id client_secret refresh_token/
   };
 }
 
 sub get_token_emails_from_storage {
   my ($self) = @_;
-  my $tokens = $self->tokensfile->get('gapi/tokens');
+  my $tokens = $self->get_from_storage('tokens');
   return [keys %$tokens];
 }
 
+sub get_from_storage {
+  my ($self, $key) = @_;
+  if ($key =~ /_token/) {
+    return $self->tokensfile->get("gapi/tokens/${\$self->user}/$key")
+  } else {
+    return $self->tokensfile->get("gapi/$key")
+  }
+}
 
-sub get_client_id_from_storage {
+sub get_access_token {
   my ($self) = @_;
-  return $self->tokensfile->get('gapi/client_id');
-}
-
-sub get_client_secret_from_storage {
-  my ($self) = @_;
-  return $self->tokensfile->get('gapi/client_secret');
-}
-
-sub get_refresh_token_from_storage {
-  my ($self, $user) = @_;
-  carp "get_refresh_token_from_storage(" . $user . ")" if $self->debug;
-  return $self->tokensfile->get('gapi/tokens/' . $user . '/refresh_token');
-}
-
-sub get_access_token_from_storage {
-  my ($self, $user) = @_;
-  return $self->tokensfile->get('gapi/tokens/' . $user . '/access_token');
-}
-
-sub set_access_token_to_storage {
-  my ($self, $user, $token) = @_;
-  return $self->tokensfile->set('gapi/tokens/' . $user . '/access_token',
-    $token);
-}
-
-sub get_scopes_from_storage {
-  my ($self) = @_;
-  return $self->tokensfile->get('gapi/scopes');
+  my $value = $self->get_from_storage('access_token');
+  return $value
 }
 
 sub get_scopes_from_storage_as_array {
@@ -78,7 +61,8 @@ sub get_scopes_from_storage_as_array {
   return $_[0]->scopes
 }
 
-# NOTE - the scopes are stored as a space seperated list
+# NOTE - the scopes are stored as a space seperated list, and this method
+# returns an arrayref
 sub scopes {
   my ($self) = @_;
   return [split / /, $self->tokensfile->get('gapi/scopes')];
