@@ -111,6 +111,11 @@ has 'ua'    => (
   lazy => 1,
 );
 
+sub get_scopes_as_array {
+  carp 'get_scopes_as_array has deprecated in favor of the shorter "scopes"';
+  return $_[0]->scopes
+}
+
 has 'chi' => (
   is      => 'rw',
   default => sub {
