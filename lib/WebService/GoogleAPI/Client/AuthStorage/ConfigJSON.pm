@@ -20,19 +20,35 @@ has 'tokensfile' => ( is => 'rw' );  # Config::JSON object pointer
 sub BUILD {
   my ($self) = @_;
   $self->tokensfile(Config::JSON->new($self->path));
+  my $missing = grep !$_, map $self->get_from_storage($_), qw/client_id client_secret/;
+  croak <<NOCLIENT if $missing;
+Malformed gapi.json detected. We need the client_id and client_secret in order
+to refresh expired tokens
+NOCLIENT
+
   return $self;
 }
 
 sub refresh_access_token {
-  ... #TODO
-}
+  my ($self, $ua) = @_;
+  my %p = map { ( $_ => $self->get_from_storage($_) ) }
+     qw/client_id client_secret refresh_token/;
 
-sub get_credentials_for_refresh {
-  my ($self, $user) = @_;
-  return {
-    map { ( $_ => $self->get_from_storage($_) ) }
-      qw/client_id client_secret refresh_token/
-  };
+  croak <<MISSINGCREDS unless $p{refresh_token};
+If your credentials are missing the refresh_token - consider removing the auth at
+https://myaccount.google.com/permissions as The oauth2 server will only ever mint one refresh
+token at a time, and if you request another access token via the flow it will operate as if
+you only asked for an access token.
+MISSINGCREDS
+  $p{grant_type} = 'refresh_token';
+  my $user = $self->user;
+
+  my $tx = $ua->post('https://www.googleapis.com/oauth2/v4/token' => form => \%p);
+  my $new_token = $tx->res->json('/access_token');
+  croak('refresh_access_token failed') unless $new_token;
+
+  $self->tokensfile->set("gapi/tokens/$user/access_token", $new_token);
+  return $new_token;
 }
 
 sub get_token_emails_from_storage {
