@@ -1,10 +1,10 @@
-package WebService::GoogleAPI::Client::AuthStorage::AccessToken;
+package WebService::GoogleAPI::Client::AccessToken;
 
 use Moo;
 
 use overload '""' => sub { shift->token };
 
-has [ qw/token user/ ] =>
+has [ qw/token user scopes/ ] =>
   is => 'ro',
   required => 1;
 

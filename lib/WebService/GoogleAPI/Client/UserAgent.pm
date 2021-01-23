@@ -191,10 +191,7 @@ sub validated_api_query
       croak "No user specified, so cant find refresh token and update access_token" unless $self->user;
       cluck "401 response - access_token was expired. Attemptimg to update it automatically ..." if  ($self->debug > 11);
 
-      my $cred      = $self->auth_storage->get_credentials_for_refresh( $self->user );    # get client_id, client_secret and refresh_token
-      my $new_token = $self->refresh_access_token( $cred )->{ access_token };             # here also {id_token} etc
-      cluck "validated_api_query() Got a new token: " . $new_token if ($self->debug > 11);
-      $self->access_token( $new_token );
+      $self->auth_storage->refresh_access_token;
 
       if ( $self->auto_update_tokens_in_storage ) {
         $self->auth_storage->set_access_token_to_storage( $self->user, $self->access_token );

@@ -10,9 +10,10 @@ package WebService::GoogleAPI::Client::AuthStorage;
 ## or is UserAgent->credentials
 
 use Moo::Role;
+use Carp;
 with 'MooX::Singleton';
 
-use WebService::GoogleAPI::Client::AuthStorage::AccessToken;
+use WebService::GoogleAPI::Client::AccessToken;
 
 requires qw/
   refresh_access_token
@@ -23,15 +24,21 @@ requires qw/
 around get_access_token => sub {
   my ($orig, $self) = @_;
   my $user = $self->user;
+  my $scopes = $self->scopes;
+
   my $token = $self->$orig;
-  my $wrapped = WebService::GoogleAPI::Client::AuthStorage::AccessToken->new(
-    user => $user, token => $token );
-  $self->access_token($wrapped);
-  return $wrapped;
+  my $class = 'WebService::GoogleAPI::Client::AccessToken';
+  return $token if ref $token eq $class;
+  return WebService::GoogleAPI::Client::AccessToken->new(
+    user => $user, token => $token, scopes => $scopes );
 };
 
 has access_token =>
-  is => 'rw';
+  is => 'rw',
+  isa => sub {
+    my $class = 'WebService::GoogleAPI::Client::AccessToken';
+    croak "access_token must be an instance of $class" unless ref $_[0] eq $class
+  };
 
 has user         =>
   is => 'rw',
