@@ -6,15 +6,12 @@ we're trying to take care of a bunch of things.
 We did a number on the architecture to allow for pluggable storage backends.
 I think some more improvement could be had, but hey, it's a start.
 
-We need to document ::Client::AccessToken (and why it's there).
-
 We also need to dress the res with the token used to create it (for introspection)
 
 We need to make auth_storage in the ua make sure the attached object is a
 consumer of our role.
 
-We must document our role, and the two consumers that we have.
-  Started doc-ing the role, at least
+We the two storage backends that we have.
 
 #Other Issues
 

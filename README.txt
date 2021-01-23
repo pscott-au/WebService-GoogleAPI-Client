@@ -109,6 +109,10 @@ METHODS
     implemented. A deprecation warning will be emmitted when this is likely
     to start happening.
 
+    For more advanced usage, you can supply your own auth storage instance,
+    which is a consumer of the WebService::GoogleAPI::Client::AuthStorage
+    role. See the POD for that module for more information.
+
     user
 
       the email address that requests will be made for
@@ -120,6 +124,12 @@ METHODS
     service_account
 
       Location of service account credentials
+
+    auth_storage
+
+      An instance of a class consuming
+      WebService::GoogleAPI::Client::AuthStorage, already set up for
+      returning access tokens (barring the ua).
 
     If you're using a service account, user represents the user that you're
     impersonating. Make sure you have domain-wide delegation set up, or
@@ -390,9 +400,9 @@ FEATURES
 
 AUTHORS
 
-      * Peter Scott <localshop@cpan.org>
-
       * Veesh Goldman <veesh@cpan.org>
+
+      * Peter Scott <localshop@cpan.org>
 
 COPYRIGHT AND LICENSE
 
