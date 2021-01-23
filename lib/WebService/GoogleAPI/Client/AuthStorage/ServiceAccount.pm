@@ -20,7 +20,7 @@ has scopes =>
 has user =>
   is => 'rw', 
   coerce => sub { $_[0] || '' },
-  deafault => '';
+  default => '';
 
 with 'WebService::GoogleAPI::Client::AuthStorage';
 
@@ -52,7 +52,6 @@ sub scopes_string {
 
 sub get_access_token {
   my ($self) = @_;
-  use Data::Printer; p $self;
   my $token = $self->tokens->{$self->scopes_string}{$self->user};
   return $self->refresh_access_token unless $token;
   return $token
