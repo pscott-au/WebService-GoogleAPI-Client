@@ -58,7 +58,7 @@ sub BUILD {
 =cut
 
 sub header_with_bearer_auth_token {
-  my ( $self, $headers ) = @_;
+  my ($self, $headers) = @_;
 
   $headers = {} unless defined $headers;
 
@@ -66,10 +66,10 @@ sub header_with_bearer_auth_token {
 
   if (my $token = $self->get_access_token) {
     $headers->{Authorization} = "Bearer $token";
-  }
-  else {
+  } else {
     # TODO - why is this not fatal?
-    carp "Can't build Auth header, couldn't get an access token. Is you AuthStorage set up correctly?";
+    carp 
+"Can't build Auth header, couldn't get an access token. Is you AuthStorage set up correctly?";
   }
   return $headers;
 }
@@ -86,51 +86,55 @@ sub header_with_bearer_auth_token {
 
 =cut
 
-sub build_http_transaction
-{
-  my ( $self, $params ) = @_;
+sub build_http_transaction {
+  my ($self, $params) = @_;
   ## hack to allow method option as alias for httpMethod
 
-  $params->{ httpMethod } = $params->{ method } if defined $params->{ method };
-  $params->{ httpMethod } = '' unless defined $params->{ httpMethod };
+  $params->{httpMethod} = $params->{method} if defined $params->{method};
+  $params->{httpMethod} = '' unless defined $params->{httpMethod};
 
-  my $http_method   = uc( $params->{ httpMethod } ) || 'GET';                                                          # uppercase ?
-  my $optional_data = $params->{ options }          || '';
-  my $path          = $params->{ path }             || cluck( 'path parameter required for build_http_transaction' );
-  my $no_auth       = $params->{ no_auth }          || 0;  ## default to including auth header - ie not setting no_auth
-  my $headers       = $params->{ headers}           || {};
+  my $http_method   = uc($params->{httpMethod}) || 'GET';    # uppercase ?
+  my $optional_data = $params->{options}        || '';
+  my $path          = $params->{path}
+    || cluck('path parameter required for build_http_transaction');
+  my $no_auth = $params->{no_auth}
+    || 0;    ## default to including auth header - ie not setting no_auth
+  my $headers = $params->{headers} || {};
 
-  cluck 'Attention! You are using POST, but no payload specified' if ( ( $http_method eq 'POST' ) && !defined $optional_data );
+  cluck 'Attention! You are using POST, but no payload specified'
+    if (($http_method eq 'POST') && !defined $optional_data);
   cluck "build_http_transaction:: $http_method $path " if ($self->debug > 11);
-  cluck "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . pp $params unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
+  cluck
+"$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction"
+    . pp $params
+    unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
 
-  ## NB - headers not passed if no_auth 
-  $headers = $self->header_with_bearer_auth_token( $headers ) unless $no_auth;
-  if ( $http_method =~ /^POST|PATH|PUT|PATCH$/ixg )
-  {
+  ## NB - headers not passed if no_auth
+  $headers = $self->header_with_bearer_auth_token($headers) unless $no_auth;
+  if ($http_method =~ /^POST|PATH|PUT|PATCH$/ixg) {
     ## ternary conditional on whether optional_data is set
     ## return $optional_data eq '' ? $self->build_tx( $http_method => $path => $headers ) : $self->build_tx( $http_method => $path => $headers => json => $optional_data );
-    if ( $optional_data eq '' )
-    {
-      return $self->build_tx( $http_method => $path => $headers );
-    }
-    else
-    {
-      if ( ref($optional_data) eq 'HASH' )
+    if ($optional_data eq '') {
+      return $self->build_tx($http_method => $path => $headers);
+    } else {
+      if (ref($optional_data) eq 'HASH') {
+        return $self->build_tx(
+          $http_method => $path => $headers => json => $optional_data);
+      } elsif (
+        ref($optional_data) eq
+        '')    ## am assuming is a post with options containing a binary payload
       {
-        return $self->build_tx( $http_method => $path => $headers => json => $optional_data ); 
+        return $self->build_tx(
+          $http_method => $path => $headers => $optional_data);
       }
-      elsif ( ref($optional_data) eq '') ## am assuming is a post with options containing a binary payload
-      {
-        return $self->build_tx( $http_method => $path => $headers =>  $optional_data ); 
-      }
-     
+
     }
-  }
-  else    ## DELETE or GET
-  {
-    return $self->build_tx( $http_method => $path => $headers => form => $optional_data ) if ( $http_method eq 'GET' );
-    return $self->build_tx( $http_method => $path => $headers ) if ( $http_method eq 'DELETE' );
+  } else { ## DELETE or GET
+    return $self->build_tx(
+      $http_method => $path => $headers => form => $optional_data)
+      if ($http_method eq 'GET');
+    return $self->build_tx($http_method => $path => $headers)
+      if ($http_method eq 'DELETE');
   }
 
   #return undef; ## assert: should never get here
@@ -193,8 +197,7 @@ sub validated_api_query {
   #      at this point, i think we'd have to make a different method entirely to
   #      do this promise-wise
   my $res = $self->start($tx)->res;
-
-  ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction
+  $res->{_token} = $self->get_access_token;
 
   if (($res->code == 401) && $self->do_autorefresh) {
     cluck "Your access token was expired. Attemptimg to update it automatically..."
