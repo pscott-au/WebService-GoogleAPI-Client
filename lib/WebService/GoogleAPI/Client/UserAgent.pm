@@ -20,7 +20,7 @@ has 'debug'                         => ( is => 'rw', default => 0 );
 has 'auth_storage' => ( 
   is => 'rw', 
   default => sub { WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->instance },
-  handles => [qw/access_token scopes user/],
+  handles => [qw/get_access_token scopes user/],
   lazy => 1 
 );
 
@@ -31,13 +31,12 @@ has 'auth_storage' => (
 
 # Keep access_token in headers always actual
 
-sub BUILD
-{
-  my ( $self ) = @_;
-  ## performance tip as per https://developers.google.com/calendar/performance and similar links
-  ## NB - to work with Google APIs also assumes that Accept-Encoding: gzip is set in HTTP headers
-  $self->transactor->name( __PACKAGE__ . ' (gzip enabled)' );
-    ## MAX SIZE ETC _ WHAT OTHER CONFIGURABLE PARAMS ARE AVAILABLE
+## performance tip as per https://developers.google.com/calendar/performance and similar links
+## NB - to work with Google APIs also assumes that Accept-Encoding: gzip is set in HTTP headers
+sub BUILD {
+  my ($self) = @_;
+  $self->transactor->name(__PACKAGE__ . ' (gzip enabled)');
+  ## MAX SIZE ETC _ WHAT OTHER CONFIGURABLE PARAMS ARE AVAILABLE
 }
 
 
@@ -47,8 +46,6 @@ sub BUILD
 
 =cut
 
-## TODO: this should probably be handled ->on('start' => sub {}) as per https://metacpan.org/pod/Mojolicious::Guides::Cookbook#Decorating-follow-up-requests
-
 sub header_with_bearer_auth_token {
   my ( $self, $headers ) = @_;
 
@@ -56,11 +53,12 @@ sub header_with_bearer_auth_token {
 
   $headers->{'Accept-Encoding'} = 'gzip';
 
-  if ($self->access_token) {
-    $headers->{Authorization} = 'Bearer ' . $self->access_token;
+  if (my $token = $self->get_access_token) {
+    $headers->{Authorization} = "Bearer $token";
   }
   else {
-    carp 'No access_token, can\'t build Auth header';
+    # TODO - why is this not fatal?
+    carp "Can't build Auth header, couldn't get an access token. Is you AuthStorage set up correctly?";
   }
   return $headers;
 }
@@ -141,7 +139,7 @@ NB - handles auth headers injection and token refresh if required and possible
 
 Required params: method, route
 
-$self->access_token must be valid
+$self->get_access_token must return a valid token
 
 Examples of usage:
 
@@ -163,92 +161,49 @@ Returns L<Mojo::Message::Response> object
 =cut
 
 
-sub validated_api_query
-{
-  my ( $self, $params ) = @_;
-  ## NB validated means that assumes checking against discovery specs has already been done.
-
-  if ( ref( $params ) eq '' )    ## assume is a GET for the URI at $params
+# NOTE validated means that we assume checking against discovery specs has already been done.
+sub validated_api_query {
+  my ($self, $params) = @_;
+  
+  ## assume is a GET for the URI at $params
+  if (ref($params) eq '')
   {
-    cluck( "transcribing $params to a hashref for validated_api_query" ) if $self->debug;
+    cluck("transcribing $params to a hashref for validated_api_query")
+      if $self->debug;
     my $val = $params;
     $params = { path => $val, method => 'get', options => {}, };
   }
 
- my $tx =  $self->build_http_transaction( $params );
- 
- cluck("$params->{method} $params->{path}") if $self->debug;
+  my $tx = $self->build_http_transaction($params);
+
+  cluck("$params->{method} $params->{path}") if $self->debug;
+
   #TODO- figure out how we can alter this to use promises
-  my $res = $self->start( $tx )->res;
-  
+  #      at this point, i think we'd have to make a different method entirely to
+  #      do this promise-wise
+  my $res = $self->start($tx)->res;
+
   ## TODO: HANDLE TIMEOUTS AND OTHER ERRORS IF THEY WEREN'T HANDLED BY build_http_transaction
-  
-  ## TODO: return Mojo::Message::Response->new unless ref( $res ) eq 'Mojo::Message::Response';
 
-  if ( ( $res->code == 401 ) && $self->do_autorefresh ) {
-    if ( $res->code == 401 ) {     ## redundant - was there something else in mind ?
-    #TODO- I'm fairly certain this fires too often
-      croak "No user specified, so cant find refresh token and update access_token" unless $self->user;
-      cluck "401 response - access_token was expired. Attemptimg to update it automatically ..." if  ($self->debug > 11);
+  if (($res->code == 401) && $self->do_autorefresh) {
+    cluck "Your access token was expired. Attemptimg to update it automatically..."
+      if ($self->debug > 11);
 
-      $self->auth_storage->refresh_access_token;
+    $self->auth_storage->refresh_access_token($self);
 
-      if ( $self->auto_update_tokens_in_storage ) {
-        $self->auth_storage->set_access_token_to_storage( $self->user, $self->access_token );
-      }
-
-      #$tx  = $self->build_http_transaction( $params );
-      
-      $res = $self->start( $self->build_http_transaction( $params ) )->res;               # Mojo::Message::Response
-    }
-  }
-  elsif ( $res->code == 403 ) {
-    cluck( 'Unexpected permission denied 403 error ' );
+    return $self->validated_api_query($params);
+  } elsif ($res->code == 403) {
+    cluck('Unexpected permission denied 403 error');
     return $res;
+  } elsif ($res->code == 429) {
+    cluck('HTTP 429 - you hit a rate limit. Try again later');
+    return $res
   }
   return $res if $res->code == 200;
-  return $res if $res->code == 204;                                                       ## NO CONTENT - INDICATES OK FOR DELETE ETC
-  return $res if $res->code == 400;                                                       ## general failure
-  cluck( "unhandled validated_api_query response code " . $res->code );
+  return $res if $res->code == 204;  ## NO CONTENT - INDICATES OK FOR DELETE ETC
+  return $res if $res->code == 400;  ## general failure
+  cluck("unhandled validated_api_query response code " . $res->code);
   return $res;
-}
-
-=head2 C<refresh_access_token>
-
-Get new access token for user from Google API server
-
-  $self->refresh_access_token({
-		client_id     => '',
-		client_secret => '',
-		refresh_token => ''
-	})
-
- Q: under what conditions could we not have a refresh token? - what scopes are required? ensure that included in defaults if they are req'd
-
-=cut
-
-sub refresh_access_token
-{
-  my ( $self, $credentials ) = @_;
-
-  if (
-    ( !defined $credentials->{ client_id } )    ## could this be caught somewhere earlier than here?
-    || ( !defined $credentials->{ client_secret } )    ##  unless credentials include an access token only ?
-    || ( !defined $credentials->{ refresh_token } )
-    )
-  {
-    croak 'If your credentials are missing the refresh_token - consider removing the auth at '
-      . 'https://myaccount.google.com/permissions as The oauth2 server will only ever mint one refresh '
-      . 'token at a time, and if you request another access token via the flow it will operate as if '
-      . 'you only asked for an access token.'
-      if !defined $credentials->{ refresh_token };
-
-    croak "Not enough credentials to refresh access_token. Check that you provided client_id, client_secret and refresh_token";
-  }
-
-  cluck "refresh_access_token:: Attempt to refresh access_token " if ($self->debug > 11);
-  $credentials->{ grant_type } = 'refresh_token';
-  return $self->post( 'https://www.googleapis.com/oauth2/v4/token' => form => $credentials )->res->json || croak( 'refresh_access_token failed' );    # tokens
 }
 
 1;

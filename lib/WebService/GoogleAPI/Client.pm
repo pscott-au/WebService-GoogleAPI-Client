@@ -103,7 +103,7 @@ has 'debug' => (
 );
 has 'ua'    => (
   handles =>
-    [qw/access_token auth_storage  do_autorefresh scopes user /],
+    [qw/get_access_token auth_storage do_autorefresh scopes user/],
   is => 'ro',
   default =>
     sub { WebService::GoogleAPI::Client::UserAgent->new(debug => shift->debug) }
@@ -251,7 +251,7 @@ Required params: method, route
 
 Optional params: api_endpoint_id  cb_method_discovery_modify, options
 
-$self->access_token must be valid
+$self->get_access_token must return a valid token
 
 
   $gapi->api_query({
