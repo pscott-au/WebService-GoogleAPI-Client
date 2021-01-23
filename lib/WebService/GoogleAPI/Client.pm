@@ -231,15 +231,15 @@ won't work.
 sub BUILD {
   my ($self, $params) = @_;
 
-  my $storage;
+  my ($storage, $file);
   if ($params->{auth_storage}) {
     $storage = $params->{auth_storage};
-  } elsif (my $file = $params->{gapi_json}) {
+  } elsif ($file = $params->{gapi_json}) {
     $storage = WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new(path => $file);
-  } elsif (my $file = $params->{service_account}) {
+  } elsif ($file = $params->{service_account}) {
     $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
       path => $file, scopes => $params->{scopes});
-  } elsif (my $file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
+  } elsif ($file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
     $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
       path => $file, scopes => $params->{scopes});
   }

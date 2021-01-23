@@ -23,6 +23,10 @@ has 'auth_storage' => (
   },
   handles => [qw/get_access_token scopes user/],
   trigger => 1,
+  isa => sub {
+    my $role = 'WebService::GoogleAPI::Client::AuthStorage';
+    die "auth_storage must implement the $role role to work!" unless $_[0]->does($role)
+  },
   lazy => 1
 );
 
