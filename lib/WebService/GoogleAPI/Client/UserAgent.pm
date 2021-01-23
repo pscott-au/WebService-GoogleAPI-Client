@@ -14,8 +14,7 @@ use Data::Dump qw/pp/;    # for dev debug
 
 use Carp qw/croak carp cluck/;
 
-has 'do_autorefresh'                => ( is => 'rw', default => 1 );    # if 1 storage must be configured
-has 'auto_update_tokens_in_storage' => ( is => 'rw', default => 1 );
+has 'do_autorefresh'                => ( is => 'rw', default => 1 );
 has 'debug'                         => ( is => 'rw', default => 0 );
 has 'auth_storage' => ( 
   is => 'rw', 

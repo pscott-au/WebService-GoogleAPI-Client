@@ -103,7 +103,7 @@ has 'debug' => (
 );
 has 'ua'    => (
   handles =>
-    [qw/get_access_token auth_storage do_autorefresh scopes user/],
+    [qw/do_autorefresh auth_storage get_access_token scopes user/],
   is => 'ro',
   default =>
     sub { WebService::GoogleAPI::Client::UserAgent->new(debug => shift->debug) }
