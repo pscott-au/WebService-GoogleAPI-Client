@@ -66,7 +66,9 @@ have the whole set you need upfront).
 
 = refresh_access_token
 
-A method which will refresh the access token if it has been determined to have expired.
+A method which will refresh the access token if it has been determined to have
+expired.  Take a look at the two consumers which come with this dist for
+examples of how to renew user credentials and service account credentials.
 
 = get_access_token
 
@@ -77,7 +79,6 @@ WebService::GoogleAPI::Client::AccessToken instance. If you choose to return suc
 
 =end :list
 =cut
-# some backends may have scopes as read only, and others as read write
 requires qw/
   scopes
   refresh_access_token

@@ -192,21 +192,30 @@ If that doesn't exist, then we default to F<gapi.json> in the current directory.
 B<Be wary!> This default is subject to change as more storage backends are implemented.
 A deprecation warning will be emmitted when this is likely to start happening.
 
-=over 4
+For more advanced usage, you can supply your own auth storage instance, which is
+a consumer of the L<WebService::GoogleAPI::Client::AuthStorage> role. See the
+POD for that module for more information.
 
-=item user
+=begin :list
+
+= user
 
 the email address that requests will be made for
 
-=item gapi_json
+= gapi_json
 
 Location of end user credentials
 
-=item service_account
+= service_account
 
 Location of service account credentials
 
-=back
+= auth_storage
+
+An instance of a class consuming L<WebService::GoogleAPI::Client::AuthStorage>, already
+set up for returning access tokens (barring the ua).
+
+=end :list
 
 If you're using a service account, user represents the user that you're
 impersonating. Make sure you have domain-wide delegation set up, or else this
@@ -222,19 +231,19 @@ won't work.
 sub BUILD {
   my ($self, $params) = @_;
 
-  if (defined $params->{gapi_json}) {
-    my $storage = WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new(
-      path => $params->{gapi_json});
-    $self->auth_storage($storage);
-  } elsif (defined $params->{service_account}) {
-    my $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
-      path => $params->{service_account}, scopes => $params->{scopes});
-    $self->auth_storage($storage);
-  } elsif (my $file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
-    my $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
+  my $storage;
+  if ($params->{auth_storage}) {
+    $storage = $params->{auth_storage};
+  } elsif (my $file = $params->{gapi_json}) {
+    $storage = WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new(path => $file);
+  } elsif (my $file = $params->{service_account}) {
+    $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
       path => $file, scopes => $params->{scopes});
-    $self->auth_storage($storage);
+  } elsif (my $file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
+    $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
+      path => $file, scopes => $params->{scopes});
   }
+  $self->auth_storage($storage) if $storage;
 
   $self->user($params->{user}) if (defined $params->{user});
 }
