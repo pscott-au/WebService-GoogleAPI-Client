@@ -1,12 +1,82 @@
 use strictures;
 package WebService::GoogleAPI::Client::AuthStorage;
 
-# ABSTRACT: JSON File Persistence for Google OAUTH Project and User Access Tokens
+# ABSTRACT: Role for classes which store your auth credentials
 
 use Moo::Role;
 use Carp;
 use WebService::GoogleAPI::Client::AccessToken;
 
+=head1 SYNOPSIS
+
+  package My::Cool::AuthStorage::Class;
+  use Moo;
+  with 'WebService::GoogleAPI::Client::AuthStorage';
+
+  ... # implement the necessary functions
+
+  package main;
+  use WebService::GoogleAPI::Client;
+  use My::Cool::AuthStorage::Class;
+  my $gapi = WebService::GoogleAPI::Client->new(
+     auth_storage => My::Cool::AuthStorage::Class->new
+  );
+  ... # and now your class manages the access_tokens
+
+WebService::GoogleAPI::Client::AuthStorage is a Moo::Role for auth storage backends.
+This dist comes with two consumers, L<WebService::GoogleAPI::Client::AuthStorage::ConfigJSON>
+and L<WebService::GoogleAPI::Client::AuthStorage::ServiceAccount>. See those for more info
+on how you can use them with L<WebService::GoogleAPI::Client>.
+
+This is a role which defines the interface that L<WebService::GoogleAPI::Client>
+will use when making requests.
+
+=cut
+
+has user => is => 'rw';
+=attr user
+
+The user that an access token should be returned for. Is read/write. May be
+falsy, depending on the backend.
+=cut
+
+# this is managed by the BUILD in ::Client::UserAgent,
+# and by the BUILD in ::Client
+has ua => is => 'rw', weak_ref => 1;
+=attr ua
+
+An weak reference to the WebService::GoogleAPI::Client::UserAgent that this is
+attached to, so that access tokens can be refreshed. The UserAgent object manages this.
+
+=cut
+
+
+=head1 REQUIRES
+
+It requires the consuming class to implement functions with the following names:
+
+=begin :list
+
+= scopes
+
+A list of scopes that you expect the access token to be valid for. This could be
+read/write, but it's not necessary. Some backends may have different credentials
+for different sets of scopes (though as an author, you probably want to just
+have the whole set you need upfront).
+
+= refresh_access_token
+
+A method which will refresh the access token if it has been determined to have expired.
+
+= get_access_token
+
+A method which will return the access token for the current user and scopes.
+This method is wrapped to augment whatever has been returned with user and
+scopes data for introspection by making a
+WebService::GoogleAPI::Client::AccessToken instance. If you choose to return such an instance yourself, then it will be left alone.
+
+=end :list
+=cut
 # some backends may have scopes as read only, and others as read write
 requires qw/
   scopes
@@ -25,11 +95,5 @@ around get_access_token => sub {
   return WebService::GoogleAPI::Client::AccessToken->new(
     user => $user, token => $token, scopes => $scopes );
 };
-
-has user => is => 'rw';
-
-# this is managed by the BUILD in ::Client::UserAgent,
-# and by the BUILD in ::Client
-has ua => is => 'rw', weak_ref => 1;
 
 1;
