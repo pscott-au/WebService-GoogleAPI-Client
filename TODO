@@ -3,83 +3,17 @@ we're trying to take care of a bunch of things.
 
 # better support for service accounts
 
-In order to implement service accounts, we need to have an
-encapsulated interface for retrieving and refreshing tokens. Then,
-there can be a shared interface, and both normal files and service
-accounts can be called the same way.
+We did a number on the architecture to allow for pluggable storage backends.
+I think some more improvement could be had, but hey, it's a start.
 
-We expect to implement something which parses the json file, and
-then determines what type it is. A gapi file has 'gapi' as the top
-level key. A service account has the following top level keys:
-qw/ type project_id private_key_id private_key client_email
-client_id auth_uri token_uri auth_provider_x509_cert_url
-client_x509_cert_url /.
+We need to document ::Client::AccessToken (and why it's there).
 
-## targets for fixing
+We also need to dress the res with the token used to create it (for introspection)
 
-### in Client::UserAgent
+We need to make auth_storage in the ua make sure the attached object is a
+consumer of our role.
 
-`refresh_access_token` needs to be controlled by the auth storage, b/c the
-process of getting a token differs between normal oauth and service accounts.
-
-see line 196 of the main module, for example.
-  yeah, gut that whole method and move it to the storage module in the code
-
-we must move refresh_access_token from the main module to the auth storage
-
-subclassing Mojo::UserAgent seems silly to me. This should be a role that gets
-composed in.
-
-### in ::Client::AuthStorage
-
-the class ::Client::AuthStorage should be able to auto-route to any storage
-class. Then it would be more sane to have the values passed to it match a class
-name. This makes this part of the system more plugable. It's not like this is
-unique to google, right.
-  this includes making the setup method take more sane parameters also, or at
-  least be somewhat documented
-
-ew, the way it's implemented the AuthStorage object holds the actual storage
-object. definitiely, definitely should be a role
-
-we've got some icky long function names to shorten
-
-one thing to ponder is that AuthStorage should deal only with the storage
-(meaning flat-file, cached in memory, in redis, in a database). The TYPE of cred
-that we want l'chora should be in ::Credentials
-
-#### for service accounts in general
-
-when implementing service accounts, note that they don't need to have a user set
-
-we would want to cache keys if we can, combined with an expiration time. the
-things that would need to be cached are 'user' and 'scopes', b/c i assume you
-get a different token depending on what scopes you ask for.
-  
-  i guess that means that we'd need to alphabetize the scopes and trim spaces,
-  so that we can just string compare and skip an extra ask for permissions
-
-
-### in ::Client::Credentials
-
-we need a way that the main module can pass config information. Make it clear,
-at least
-
-why does this class even exist?
-
-  okay, so i decided that ::Credentials should manage the retrieval and renewal
-  of credentials, depending on the type. AuthStorage should only store (read
-  only or read-write).
-
-why is this a singleton?
-
-  it's a singleton b/c you may want to share credentials between all instances
-  i guess that's a reasonable default for the module to provide, and let you
-  override if you need to
-
-i don't see a reason that this should be implemented seperately from the
-storage.
-
+We must document our role, and the two consumers that we have.
 
 #Other Issues
 

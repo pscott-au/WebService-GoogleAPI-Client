@@ -4,7 +4,7 @@ NAME
 
 VERSION
 
-    version 0.22
+    version 0.23
 
 SYNOPSIS
 
@@ -42,18 +42,21 @@ EXAMPLES
         use MIME::Base64;
         my $my_email_address = 'peter@shotgundriver.com'
     
+        my $raw_email_payload = encode_base64(
+          Email::Simple->create(
+            header => [
+              To      => $my_email_address,
+              From    => $my_email_address,
+              Subject => "Test email from '$my_email_address' ",
+            ],
+            body => "This is the body of email to '$my_email_address'",
+          )->as_string
+        );
     
-        my $raw_email_payload = encode_base64( Email::Simple->create( 
-                 header => [To => $my_email_address, From => $my_email_address, 
-                            Subject =>"Test email from '$my_email_address' ",], 
-                 body => "This is the body of email to '$my_email_address'", 
-               )->as_string 
-            );
-    
-        $gapi_client->api_query( 
-                                api_endpoint_id => 'gmail.users.messages.send',
-                                options    => { raw => $raw_email_payload },
-                            );
+        $gapi_client->api_query(
+          api_endpoint_id => 'gmail.users.messages.send',
+          options         => { raw => $raw_email_payload },
+        );
 
  MANUAL API REQUEST CONSTRUCTION - GET CALENDAR LIST
 
@@ -67,20 +70,60 @@ METHODS
 
  new
 
-      WebService::GoogleAPI::Client->new( user => 'peter@pscott.com.au', gapi_json => '/fullpath/gapi.json' );
+      WebService::GoogleAPI::Client->new(
+         user => 'peter@pscott.com.au', gapi_json => '/fullpath/gapi.json' );
 
-  PARAMETERS
+  General parameters
 
-   user :: the email address that identifies key of credentials in the
-   config file
+    debug
 
-   gapi_json :: Location of the configuration credentials - default
-   gapi.json
+      if truthy then diagnostics are send to STDERR - default false. Crank
+      it up to 11 for maximal debug output
 
-   debug :: if '1' then diagnostics are send to STDERR - default false
+    chi
 
-   chi :: an instance to a CHI persistent storage case object - if none
-   provided FILE is used
+      an instance to a CHI persistent storage case object - if none
+      provided FILE is used
+
+  Login Parameters
+
+    You can use either gapi_json, which is the file you get from using the
+    bundled goauth tool, or service_account which is the json file you can
+    download from
+    https://console.cloud.google.com/iam-admin/serviceaccounts.
+
+    service_account and gapi_json are mutually exclusive, and gapi_json
+    takes precedence.
+
+    If nothing is passed, then we check the GOOGLE_APPLICATION_CREDENTIALS
+    env variable for the location of a service account file. This matches
+    the functionality of the Google Cloud libraries from other languages
+    (well, somewhat. I haven't fully implemented ADC yet - see Google's
+    Docs <https://cloud.google.com/docs/authentication/production> for some
+    details. PRs are welcome!)
+
+    If that doesn't exist, then we default to gapi.json in the current
+    directory.
+
+    Be wary! This default is subject to change as more storage backends are
+    implemented. A deprecation warning will be emmitted when this is likely
+    to start happening.
+
+    user
+
+      the email address that requests will be made for
+
+    gapi_json
+
+      Location of end user credentials
+
+    service_account
+
+      Location of service account credentials
+
+    If you're using a service account, user represents the user that you're
+    impersonating. Make sure you have domain-wide delegation set up, or
+    else this won't work.
 
  api_query
 
@@ -93,7 +136,7 @@ METHODS
 
     Optional params: api_endpoint_id cb_method_discovery_modify, options
 
-    $self->access_token must be valid
+    $self->get_access_token must return a valid token
 
       $gapi->api_query({
           method => 'get',
@@ -345,13 +388,15 @@ FEATURES
       OAuth2 configuration, sccoping, authorization and obtaining access_
       and refresh_ tokens from users
 
-AUTHOR
+AUTHORS
 
-    Peter Scott <localshop@cpan.org>
+      * Peter Scott <localshop@cpan.org>
+
+      * Veesh Goldman <veesh@cpan.org>
 
 COPYRIGHT AND LICENSE
 
-    This software is Copyright (c) 2017-2018 by Peter Scott and others.
+    This software is Copyright (c) 2017-2020 by Peter Scott and others.
 
     This is free software, licensed under:
 
