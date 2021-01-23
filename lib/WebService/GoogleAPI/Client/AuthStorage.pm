@@ -1,13 +1,10 @@
 use strictures;
-
 package WebService::GoogleAPI::Client::AuthStorage;
 
 # ABSTRACT: JSON File Persistence for Google OAUTH Project and User Access Tokens
 
 use Moo::Role;
 use Carp;
-with 'MooX::Singleton';
-
 use WebService::GoogleAPI::Client::AccessToken;
 
 # some backends may have scopes as read only, and others as read write
@@ -31,5 +28,8 @@ around get_access_token => sub {
 
 has user => is => 'rw';
 
+# this is managed by the BUILD in ::Client::UserAgent,
+# and by the BUILD in ::Client
+has ua => is => 'rw', weak_ref => 1;
 
 1;

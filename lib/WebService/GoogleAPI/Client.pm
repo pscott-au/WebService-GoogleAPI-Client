@@ -223,19 +223,17 @@ sub BUILD {
   my ($self, $params) = @_;
 
   if (defined $params->{gapi_json}) {
-    $self->auth_storage(
-      WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new(path => $params->{gapi_json})
-    );
+    my $storage = WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new(
+      path => $params->{gapi_json});
+    $self->auth_storage($storage);
   } elsif (defined $params->{service_account}) {
-    $self->auth_storage(
-      WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
-        path => $params->{service_account})
-    );
+    my $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
+      path => $params->{service_account}, scopes => $params->{scopes});
+    $self->auth_storage($storage);
   } elsif (my $file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
-    $self->auth_storage(
-      WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
-        path => $file)
-    );
+    my $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
+      path => $file, scopes => $params->{scopes});
+    $self->auth_storage($storage);
   }
 
   $self->user($params->{user}) if (defined $params->{user});

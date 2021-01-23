@@ -18,12 +18,24 @@ has 'do_autorefresh'                => ( is => 'rw', default => 1 );
 has 'debug'                         => ( is => 'rw', default => 0 );
 has 'auth_storage' => ( 
   is => 'rw', 
-  default => sub { WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->instance },
+  default => sub {
+    WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new
+  },
   handles => [qw/get_access_token scopes user/],
-  lazy => 1 
+  trigger => 1,
+  lazy => 1
 );
 
-## NB - could cache using https://metacpan.org/pod/Mojo::UserAgent::Cached TODO: Review source of this for ideas 
+sub _trigger_auth_storage {
+  my ($self) = @_;
+  # give the auth_storage a ua
+  # TODO - this seems like code smell to me. Should these storage things be
+  # roles that get applied to this ua?
+  $self->auth_storage->ua($self)
+}
+
+## NB - could cache using https://metacpan.org/pod/Mojo::UserAgent::Cached
+#  TODO: Review source of this for ideas 
 
 
 ## NB - used by both Client and Discovery

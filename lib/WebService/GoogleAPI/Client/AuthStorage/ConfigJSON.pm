@@ -30,7 +30,7 @@ NOCLIENT
 }
 
 sub refresh_access_token {
-  my ($self, $ua) = @_;
+  my ($self) = @_;
   my %p = map { ( $_ => $self->get_from_storage($_) ) }
      qw/client_id client_secret refresh_token/;
 
@@ -43,7 +43,7 @@ MISSINGCREDS
   $p{grant_type} = 'refresh_token';
   my $user = $self->user;
 
-  my $tx = $ua->post('https://www.googleapis.com/oauth2/v4/token' => form => \%p);
+  my $tx = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' => form => \%p);
   my $new_token = $tx->res->json('/access_token');
   croak('refresh_access_token failed') unless $new_token;
 
