@@ -450,56 +450,85 @@ sub api_query
 
 ##################################################
 ## _ensure_api_spec_has_defined_fields is really only used to allow carping without undef warnings if needed
-sub _ensure_api_spec_has_defined_fields 
-{
-  my ( $self, $api_discovery_struct ) = @_;
+sub _ensure_api_spec_has_defined_fields {
+  my ($self, $api_discovery_struct) = @_;
   ## Ensure API Discovery has expected fields defined
-  foreach my $expected_key ( qw/path title ownerName version id discoveryVersion revision description documentationLink rest/ )
-  {
-    $api_discovery_struct->{ $expected_key } = '' unless defined $api_discovery_struct->{ $expected_key };
+  foreach my $expected_key (qw/path title ownerName version id discoveryVersion
+       revision description documentationLink rest/) {
+    $api_discovery_struct->{$expected_key} = ''
+      unless defined $api_discovery_struct->{$expected_key};
   }
-  $api_discovery_struct->{ canonicalName }     = $api_discovery_struct->{ title } unless defined $api_discovery_struct->{ canonicalName };
+  $api_discovery_struct->{canonicalName} = $api_discovery_struct->{title}
+    unless defined $api_discovery_struct->{canonicalName};
   return $api_discovery_struct;
 }
 ##################################################
 
 ##################################################
-sub _process_params_for_api_endpoint_and_return_errors
-{
-  my ( $self, $params) = @_; ## nb - api_endpoint is a param - param key values are modified through this sub
+sub _process_params_for_api_endpoint_and_return_errors {
+  ## nb - api_endpoint is a param - param key values are modified through this sub
+  my ($self, $params) = @_;
 
-  croak('this should never happen - this method is internal only!') unless defined $params->{ api_endpoint_id };
-  
-  my $api_discovery_struct    = $self->_ensure_api_spec_has_defined_fields( $self->discovery->get_api_document( $params->{ api_endpoint_id } ) );       ## $api_discovery_struct requried for service base URL
-  $api_discovery_struct->{ baseUrl } =~ s/\/$//sxmg;    ## remove trailing '/' from baseUrl
-  
-  my $method_discovery_struct = $self->get_method_details( $params->{ api_endpoint_id } ); ## if can get discovery data for google api endpoint then continue to perform detailed checks
+  croak('this should never happen - this method is internal only!')
+    unless defined $params->{api_endpoint_id};
+
+  ## $api_discovery_struct requried for service base URL
+  my $api_discovery_struct = $self->_ensure_api_spec_has_defined_fields(
+    $self->discovery->get_api_document($params->{api_endpoint_id}));
+  ## remove trailing '/' from baseUrl
+  $api_discovery_struct->{baseUrl} =~ s/\/$//sxmg;
+
+  my $method_discovery_struct =
+    $self->get_method_details($params->{api_endpoint_id})
+    ; ## if can get discovery data for google api endpoint then continue to perform detailed checks
 
   #save away original path so we can know if it's fiddled with
   #later
   $method_discovery_struct->{origPath} = $method_discovery_struct->{path};
 
   ## allow optional user callback pre-processing of method_discovery_struct
-  $method_discovery_struct = &{$params->{cb_method_discovery_modify}}($method_discovery_struct) if ( defined $params->{cb_method_discovery_modify} && ref( $params->{cb_method_discovery_modify} ) eq 'CODE' );
+  $method_discovery_struct =
+    &{ $params->{cb_method_discovery_modify} }($method_discovery_struct)
+    if (defined $params->{cb_method_discovery_modify}
+    && ref($params->{cb_method_discovery_modify}) eq 'CODE');
 
-  return ("Checking discovery of $params->{api_endpoint_id} method data failed - is this a valid end point") unless ( keys %{ $method_discovery_struct } > 0  ); 
+  return (
+"Checking discovery of $params->{api_endpoint_id} method data failed - is this a valid end point"
+  ) unless (keys %{$method_discovery_struct} > 0);
   ## assertion: method discovery struct ok - or at least has keys
-  carp( "API Endpoint $params->{api_endpoint_id} discovered specification didn't include expected 'parameters' keyed HASH structure" ) unless ref( $method_discovery_struct->{ parameters } ) eq 'HASH';
-  
-  my @teapot_errors = (); ## errors are pushed into this as encountered
-  $params->{ method } = $method_discovery_struct->{ httpMethod } || 'GET' if ( not defined $params->{ method } );
-  push( @teapot_errors, "method mismatch - you requested a $params->{method} which conflicts with discovery spec requirement for $method_discovery_struct->{httpMethod}" ) if ( $params->{ method } !~ /^$method_discovery_struct->{httpMethod}$/sxim );
-  push( @teapot_errors, "Client Credentials do not include required scope to access $params->{api_endpoint_id}" ) unless $self->has_scope_to_access_api_endpoint( $params->{ api_endpoint_id } );     ## ensure user has required scope access
-  $params->{ path } = $method_discovery_struct->{ path } unless $params->{ path }; ## Set default path iff not set by user - NB - will prepend baseUrl later
-  push @teapot_errors, 'path is a required parameter'    unless $params->{ path };
+  carp(
+"API Endpoint $params->{api_endpoint_id} discovered specification didn't include expected 'parameters' keyed HASH structure"
+  ) unless ref($method_discovery_struct->{parameters}) eq 'HASH';
 
-  push @teapot_errors, $self->_interpolate_path_parameters_append_query_params_and_return_errors( $params, $method_discovery_struct );
-  
-  $params->{ path } =~ s/^\///sxmg;    ## remove leading '/'  from path  
-  $params->{ path } = "$api_discovery_struct->{baseUrl}/$params->{path}" unless $params->{ path } =~ /^$api_discovery_struct->{baseUrl}/ixsmg; ## prepend baseUrl if required
+  my @teapot_errors = ();    ## errors are pushed into this as encountered
+  $params->{method} = $method_discovery_struct->{httpMethod} || 'GET'
+    if (not defined $params->{method});
+  push(@teapot_errors,
+"method mismatch - you requested a $params->{method} which conflicts with discovery spec requirement for $method_discovery_struct->{httpMethod}"
+  ) if ($params->{method} !~ /^$method_discovery_struct->{httpMethod}$/sxim);
+  push(@teapot_errors,
+"Client Credentials do not include required scope to access $params->{api_endpoint_id}"
+    )
+    unless $self->has_scope_to_access_api_endpoint($params->{api_endpoint_id})
+    ;                        ## ensure user has required scope access
+  $params->{path} = $method_discovery_struct->{path}
+    unless $params->{path}
+    ;  ## Set default path iff not set by user - NB - will prepend baseUrl later
+  push @teapot_errors, 'path is a required parameter' unless $params->{path};
+
+  push @teapot_errors,
+    $self->_interpolate_path_parameters_append_query_params_and_return_errors(
+    $params, $method_discovery_struct);
+
+  $params->{path} =~ s/^\///sxmg;    ## remove leading '/'  from path
+  $params->{path} = "$api_discovery_struct->{baseUrl}/$params->{path}"
+    unless $params->{path} =~
+    /^$api_discovery_struct->{baseUrl}/ixsmg;    ## prepend baseUrl if required
 
   ## if errors - add detail available in the discovery struct for the method and service to aid debugging
-  push @teapot_errors, qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_discovery_struct->{ownerName} $api_discovery_struct->{canonicalName} $api_discovery_struct->{version} with id $method_discovery_struct->{id} as described by discovery document version $api_discovery_struct->{discoveryVersion} revision $api_discovery_struct->{revision} with documentation at $api_discovery_struct->{documentationLink} \nDescription: $method_discovery_struct->{description}\n}  if @teapot_errors;
+  push @teapot_errors,
+qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_discovery_struct->{ownerName} $api_discovery_struct->{canonicalName} $api_discovery_struct->{version} with id $method_discovery_struct->{id} as described by discovery document version $api_discovery_struct->{discoveryVersion} revision $api_discovery_struct->{revision} with documentation at $api_discovery_struct->{documentationLink} \nDescription: $method_discovery_struct->{description}\n}
+    if @teapot_errors;
 
   return @teapot_errors;
 }

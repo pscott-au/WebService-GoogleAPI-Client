@@ -73,7 +73,7 @@ sub header_with_bearer_auth_token {
   } else {
     # TODO - why is this not fatal?
     carp 
-"Can't build Auth header, couldn't get an access token. Is you AuthStorage set up correctly?";
+"Can't build Auth header, couldn't get an access token. Is your AuthStorage set up correctly?";
   }
   return $headers;
 }

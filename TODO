@@ -1,19 +1,19 @@
 # vim: ft=markdown
-we're trying to take care of a bunch of things.
 
 # better support for service accounts
 
 We did a number on the architecture to allow for pluggable storage backends.
 I think some more improvement could be had, but hey, it's a start.
 
-We need to make auth_storage in the ua make sure the attached object is a
-consumer of our role.
-  - test this, and a lot of other stuff
+
+- test that auth_storage only takes our subclasses
+
+- get a real test down which uses normal creds and uses service account creds
+  i guess to read rows from a spreadsheet (like we have in some $work code)
+
+- test that there are sensible explosions when an endpoint does not exist
 
 We must document the two storage backends that we have.
-
-In the auth backends, make failure to get a token return the error attached to
-it.
 
 #Other Issues
 
@@ -27,6 +27,9 @@ like a tell, and for way too long, too.
 Maybe even go for dynamic class creation, similar to what OpenAPI
 producers use. Although I'm thinking of just moving over to using
 gRPC, which does actually have a perl client (seemingly).
+
+It just hit me that it could be some of the slowness comes from checking that
+you're authenticated for the request.
 
 
 ## Encapsulate logic better
