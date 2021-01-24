@@ -232,6 +232,10 @@ subtest 'checking for API availablity' => sub {
 
 };
 
+# TODO - we need to deal with issues when you can't find a method. 
+# We had a bug once where google updated, but our cached discovery document
+# didn't and we kept crashing b/c it couldn't find the old version that we were
+# using (b/c we were relying on the default version, i think)
 done_testing;
 
 __DATA__
