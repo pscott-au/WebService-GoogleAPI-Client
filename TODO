@@ -10,7 +10,10 @@ We need to make auth_storage in the ua make sure the attached object is a
 consumer of our role.
   - test this, and a lot of other stuff
 
-We the two storage backends that we have.
+We must document the two storage backends that we have.
+
+In the auth backends, make failure to get a token return the error attached to
+it.
 
 #Other Issues
 

@@ -45,7 +45,13 @@ MISSINGCREDS
 
   my $tx = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' => form => \%p);
   my $new_token = $tx->res->json('/access_token');
-  croak('refresh_access_token failed') unless $new_token;
+  unless ($new_token) {
+    croak "Failed to refresh access token: ",
+      join ' - ', map $tx->res->json("/$_"), qw/error error_description/
+      if $tx->res->json;
+    # if the error doesn't come from google
+    croak "Unknown error refreshing access token";
+  }
 
   $self->tokensfile->set("gapi/tokens/$user/access_token", $new_token);
   return $new_token;
