@@ -15,6 +15,8 @@ I think some more improvement could be had, but hey, it's a start.
 
 We must document the two storage backends that we have.
 
+# add support for idiomatic boolean values
+
 #Other Issues
 
 ## Less logic on repeated calls

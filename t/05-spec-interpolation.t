@@ -17,7 +17,7 @@ my $options = {
 };
 
 sub build_req {
-  $gapi->_process_params_for_api_endpoint_and_return_errors(shift);
+  $gapi->_process_params(shift);
 }
 
 build_req($options);
@@ -75,21 +75,21 @@ MSG
 
     $options = { api_endpoint_id => 'jobs.projects.jobs.delete',
       options => {name => 'projects/sner/jobs/bler'} };
-    $gapi->_process_params_for_api_endpoint_and_return_errors( $options );
+    $gapi->_process_params( $options );
     is $options->{path}, "$interpolated/bler", 
       'Interpolates a {+param} that matches the spec pattern';
 
     $options = 
     { api_endpoint_id => 'jobs.projects.jobs.list',
       options => { parent => 'sner' } };
-    $gapi->_process_params_for_api_endpoint_and_return_errors( $options );
+    $gapi->_process_params( $options );
     is $options->{path}, $interpolated, 
       'Interpolates just the dynamic part of the {+param}, when not matching the spec pattern';
 
     $options = 
     { api_endpoint_id => 'jobs.projects.jobs.delete',
       options => {projectsId => 'sner', jobsId => 'bler'} };
-    $gapi->_process_params_for_api_endpoint_and_return_errors( $options );
+    $gapi->_process_params( $options );
 
     is $options->{path}, "$interpolated/bler", 
       'Interpolates params that match the flatName spec (camelCase)';
@@ -97,7 +97,7 @@ MSG
     $options = 
     { api_endpoint_id => 'jobs.projects.jobs.delete',
       options => {projects_id => 'sner', jobs_id => 'bler'} };
-    $gapi->_process_params_for_api_endpoint_and_return_errors( $options );
+    $gapi->_process_params( $options );
 
     is $options->{path}, "$interpolated/bler", 
       'Interpolates params that match the names in the api description (snake_case)';
@@ -111,14 +111,14 @@ MSG
       $options = 
       { api_endpoint_id => 'jobs.projects.jobs.delete',
         options => { name => 'sner' } };
-      @errors = $gapi->_process_params_for_api_endpoint_and_return_errors( $options );
+      @errors = $gapi->_process_params( $options );
       is $errors[0], 'Not enough parameters given for {+name}.', 
         "Fails if you don't supply enough values to fill the dynamic parts of {+param}";
 
       $options = 
       { api_endpoint_id => 'jobs.projects.jobs.delete',
         options => { jobsId => 'sner' } };
-      @errors = $gapi->_process_params_for_api_endpoint_and_return_errors( $options );
+      @errors = $gapi->_process_params( $options );
       is $errors[0], 'Missing a parameter for {projectsId}.', 
         "Fails if you don't supply enough values to fill the flatPath";
 

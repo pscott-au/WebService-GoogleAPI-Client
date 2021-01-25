@@ -402,48 +402,45 @@ Returns L<Mojo::Message::Response> object
 
 ## NB - uses the ua api_query to execute the server request
 ##################################################
-sub api_query
-{
-  my ( $self, @params_array ) = @_;
+sub api_query {
+  my ($self, @params_array) = @_;
 
   ## TODO - find a more elgant idiom to do this - pulled this off top of head for quick imeplementation
   my $params = {};
-  if ( scalar( @params_array ) == 1 && ref( $params_array[0] ) eq 'HASH' )
-  {
+  if (scalar(@params_array) == 1 && ref($params_array[0]) eq 'HASH') {
     $params = $params_array[0];
+  } else {
+    $params = {@params_array};    ## what happens if not even count
   }
-  else
-  {
-    $params = { @params_array };    ## what happens if not even count
-  }
-  carp( pp $params) if $self->debug > 10;
-  
+  carp(pp $params) if $self->debug > 10;
 
-  my @teapot_errors = ();           ## used to collect pre-query validation errors - if set we return a response with 418 I'm a teapot  
-  @teapot_errors = $self->_process_params_for_api_endpoint_and_return_errors( $params ) if ( defined $params->{ api_endpoint_id } ); ## ## pre-query validation if api_id parameter is included
+  ## used to collect pre-query validation errors - if set we return a response
+  #  with 418 I'm a teapot
+  my @teapot_errors = ();
+  ## pre-query validation if api_id parameter is included
+  @teapot_errors = $self->_process_params($params)
+    if (defined $params->{api_endpoint_id});
 
-  
-  if ( not defined $params->{ path } ) ## either as param or from discovery
-  {
+  ## either as param or from discovery
+  if (not defined $params->{path}) {
     push @teapot_errors, 'path is a required parameter';
     $params->{path} = '';
   }
-  push @teapot_errors, "Path '$params->{path}' includes unfilled variable after processing" if ( $params->{ path } =~ /\{.+\}/xms ) ;
-
-  if ( @teapot_errors > 0 )    ## carp and include in 418 TEAPOT ERROR - response body with @teapot errors
-  {
-    carp( join( "\n", @teapot_errors ) ) if $self->debug;
+  push @teapot_errors, "Path '$params->{path}' includes unfilled variable after processing"
+    if ($params->{path} =~ /\{.+\}/xms);
+  ## carp and include in 418 TEAPOT ERROR - response body with @teapot errors
+  if (@teapot_errors > 0) {
+    carp(join("\n", @teapot_errors)) if $self->debug;
     return Mojo::Message::Response->new(
       content_type => 'text/plain',
       code         => 418,
-      message      => 'Teapot Error - Reqeust blocked before submitting to server with pre-query validation errors',
-      body         => join( "\n", @teapot_errors )
+      message      =>
+'Teapot Error - Reqeust blocked before submitting to server with pre-query validation errors',
+      body => join("\n", @teapot_errors)
     );
-  }
-  else ## query looks good - send to user agent to execute
-  {
-    #print pp $params;
-    return $self->ua->validated_api_query( $params );
+  } else {
+    ## query looks good - send to user agent to execute
+    return $self->ua->validated_api_query($params);
   }
 }
 ##################################################
@@ -466,6 +463,11 @@ sub _ensure_api_spec_has_defined_fields {
 
 ##################################################
 sub _process_params_for_api_endpoint_and_return_errors {
+  warn '_process_params_for_api_endpoint_and_return_errors has been deprecated. Please use _process_params';
+  _process_params(@_);
+}
+
+sub _process_params {
   ## nb - api_endpoint is a param - param key values are modified through this sub
   my ($self, $params) = @_;
 
@@ -477,10 +479,10 @@ sub _process_params_for_api_endpoint_and_return_errors {
     $self->discovery->get_api_document($params->{api_endpoint_id}));
   ## remove trailing '/' from baseUrl
   $api_discovery_struct->{baseUrl} =~ s/\/$//sxmg;
-
-  my $method_discovery_struct =
-    $self->get_method_details($params->{api_endpoint_id})
-    ; ## if can get discovery data for google api endpoint then continue to perform detailed checks
+  
+  ## if can get discovery data for google api endpoint then continue to perform
+  #  detailed checks
+  my $method_discovery_struct = $self->get_method_details($params->{api_endpoint_id});
 
   #save away original path so we can know if it's fiddled with
   #later
@@ -492,9 +494,8 @@ sub _process_params_for_api_endpoint_and_return_errors {
     if (defined $params->{cb_method_discovery_modify}
     && ref($params->{cb_method_discovery_modify}) eq 'CODE');
 
-  return (
-"Checking discovery of $params->{api_endpoint_id} method data failed - is this a valid end point"
-  ) unless (keys %{$method_discovery_struct} > 0);
+  croak "Can't get data for $params->{api_endpoint_id}- is this a valid end point?"
+   unless (keys %{$method_discovery_struct} > 0);
   ## assertion: method discovery struct ok - or at least has keys
   carp(
 "API Endpoint $params->{api_endpoint_id} discovered specification didn't include expected 'parameters' keyed HASH structure"

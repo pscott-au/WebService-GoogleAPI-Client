@@ -218,8 +218,8 @@ subtest 'checking for API availablity' => sub {
       { api => 'gmail', version => 'v1' },
       'got default from hashref';
 
-    is $disco->process_api_version('gmail:v2'), 
-      { api => 'gmail', version => 'v2' },
+    is $disco->process_api_version('gmail:v9000'), 
+      { api => 'gmail', version => 'v9000' },
       'take a version if given (even if imaginary)';
 
     is $disco->process_api_version({ api => 'gmail', version => 'v2' }), 
