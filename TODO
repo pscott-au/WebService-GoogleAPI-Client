@@ -15,7 +15,13 @@ I think some more improvement could be had, but hey, it's a start.
 
 We must document the two storage backends that we have.
 
-# add support for idiomatic boolean values
+# Make this more idiomatic
+
+Allow users to make requests like this
+  $gapi->api_query('drive.files.list', $options)
+
+Allow boolean values to be coerced from truthy or falsy values (except for
+explicit false)
 
 #Other Issues
 
