@@ -1,4 +1,5 @@
 package WebService::GoogleAPI::Client::AccessToken;
+use strictures;
 
 # VERSION
 
