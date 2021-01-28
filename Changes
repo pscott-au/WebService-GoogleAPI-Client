@@ -6,6 +6,7 @@ ENHANCEMENTS
 - allow introspection for credentials on $res returned from an api query
 
 BREAKING CHANGES
+- will immediately on non-existent API endpoints
 - rework AuthStorage classes: anything that depended on
   ::AuthStorage or ::Credentials in an undocumented way will likely explode.
   Please open an issue on github and I'll try and help you migrate

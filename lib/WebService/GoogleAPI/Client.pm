@@ -499,13 +499,6 @@ sub _process_params {
     if (defined $params->{cb_method_discovery_modify}
     && ref($params->{cb_method_discovery_modify}) eq 'CODE');
 
-  croak "Can't get data for $params->{api_endpoint_id}- is this a valid end point?"
-   unless (keys %{$method_discovery_struct} > 0);
-  ## assertion: method discovery struct ok - or at least has keys
-  carp(
-"API Endpoint $params->{api_endpoint_id} discovered specification didn't include expected 'parameters' keyed HASH structure"
-  ) unless ref($method_discovery_struct->{parameters}) eq 'HASH';
-
   my @teapot_errors = ();    ## errors are pushed into this as encountered
   $params->{method} = $method_discovery_struct->{httpMethod} || 'GET'
     if (not defined $params->{method});

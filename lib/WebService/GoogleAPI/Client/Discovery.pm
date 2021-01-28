@@ -409,7 +409,7 @@ returns a hashref representing the discovery specification for the
 method identified by $tree in dotted API format such as
 texttospeech.text.synthesize
 
-returns an empty hashref if not found.
+Dies a horrible death if not found.
 
 Also available as C<extract_method_discovery_detail_from_api_spec>, but the long name is being
 deprecated in favor of the more compact one.
@@ -428,31 +428,28 @@ sub get_method_details {
   my ($self, $tree, $api_version) = @_;
   ## where tree is the method in format from _extract_resource_methods_from_api_spec() like projects.models.versions.get
   ##   the root is the api id - further '.' sep levels represent resources until the tailing label that represents the method
-  #TODO- should die a horrible death if method not found
-  return {} unless defined $tree;
+  croak 'You must ask for a method!' unless defined $tree;
 
   my @nodes = split /\./smx, $tree;
   croak(
     "tree structure '$tree' must contain at least 2 nodes including api id, [list of hierarchical resources ] and method - not "
       . scalar(@nodes))
-    unless scalar(@nodes) > 1;
+    unless @nodes > 1;
 
   my $api_id = shift(@nodes);    ## api was head
   my $method = pop(@nodes);      ## method was tail
 
   ## split out version if is defined as part of $tree
   ## trim any resource, method or version details in api id
-  if ($api_id =~ /([^:]+):([^\.]+)$/ixsm
-    )    ## we have already isolated head from api tree children
-  {
+  ## we have already isolated head from api tree children
+  if ($api_id =~ /([^:]+):([^\.]+)$/ixsm) {
     $api_id      = $1;
     $api_version = $2;
   }
 
   ## handle incorrect api_id
   if ($self->service_exists($api_id) == 0) {
-    carp("unable to confirm that '$api_id' is a valid Google API service id");
-    return {};
+    croak("unable to confirm that '$api_id' is a valid Google API service id");
   }
 
   $api_version = $self->latest_stable_version($api_id) unless $api_version;
@@ -484,7 +481,6 @@ sub get_method_details {
     = $self->_extract_resource_methods_from_api_spec("$api_id:$api_version",
     $api_spec);
 
-  #print dump $all_api_methods;exit;
   unless (defined $all_api_methods->{$tree}) {
     $all_api_methods
       = $self->_extract_resource_methods_from_api_spec($api_id, $api_spec);
@@ -493,6 +489,7 @@ sub get_method_details {
 
     #add in the global parameters to the endpoint,
     #stored in the top level of the api_spec
+    # TODO - why are we mutating the main hash?
     $all_api_methods->{$tree}{parameters} = {
       %{ $all_api_methods->{$tree}{parameters} },
       %{ $api_spec->{parameters} }
@@ -500,10 +497,7 @@ sub get_method_details {
     return $all_api_methods->{$tree};
   }
 
-  carp(
-    "Unable to find method detail for '$tree' within Google Discovery Spec for $api_id version $api_version"
-  ) if $self->debug;
-  return {};
+  croak("Unable to find method detail for '$tree' within Google Discovery Spec for $api_id version $api_version")
 }
 ########################################################
 
