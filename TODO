@@ -1,19 +1,5 @@
 # vim: ft=markdown
 
-# better support for service accounts
-
-We did a number on the architecture to allow for pluggable storage backends.
-I think some more improvement could be had, but hey, it's a start.
-
-- test that auth_storage only takes our subclasses
-
-- get a real test down which uses normal creds and uses service account creds
-  i guess to read rows from a spreadsheet (like we have in some $work code)
-
-- test that there are sensible explosions when an endpoint does not exist
-
-fix docs for goauth
-
 # Make this more idiomatic
 
 Allow users to make requests like this

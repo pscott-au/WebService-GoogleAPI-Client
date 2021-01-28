@@ -97,8 +97,6 @@ subtest 'funky stuff in the jobs api' => sub {
     is $options->{path}, $interpolated =~ s+/your-fez.*$++r, 
       'Interpolates just the dynamic part of the {+param}, when not matching the spec pattern',
       @errors;
-
-
   };
 
 
@@ -112,9 +110,18 @@ subtest 'funky stuff in the jobs api' => sub {
     is $errors[0], 'Not enough parameters given for {+name}.', 
       "Fails if you don't supply enough values to fill the dynamic parts of {+param}";
 
-    $options = 
-    { api_endpoint_id => $endpoint,
-      options => { jobsId => 'sner' } };
+    $options = {
+      api_endpoint_id => 'jobs.projects.tenants.jobs.list',
+      options => { parent => 'sner' }
+    };
+    @errors = $gapi->_process_params( $options );
+    is $errors[0], 'Not enough parameters given for {+parent}.', 
+      "Fails if you don't supply enough values to fill the dynamic parts of {+param}";
+
+    $options = {
+      api_endpoint_id => $endpoint,
+      options => { jobsId => 'sner' }
+    };
     @errors = $gapi->_process_params( $options );
     is $errors[0], 'Missing a parameter for {projectsId}.', 
       "Fails if you don't supply enough values to fill the flatPath";
