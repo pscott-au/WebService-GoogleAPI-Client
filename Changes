@@ -1,0 +1,14 @@
+{{$NEXT}}
+
+ENHANCEMENTS
+- add support for service accounts
+- rework storage backend to allow custom implementations (here's looking at you, redis)
+- allow introspection for credentials on $res returned from an api query
+
+BREAKING CHANGES
+- will immediately on non-existent API endpoints
+- rework AuthStorage classes: anything that depended on
+  ::AuthStorage or ::Credentials in an undocumented way will likely explode.
+  Please open an issue on github and I'll try and help you migrate
+- remove some undocumented options
+- the examples/ dir MAY be broken, I didn't check (they need cleaning up anyways)

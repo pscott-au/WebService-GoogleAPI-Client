@@ -1,64 +1,255 @@
-#!perl -T
+#!/usr/bin/env perl
 
-=head2 USAGE
-
-To run manually in the local directory assuming gapi.json present in source root and in xt/author/calendar directory
-  C<prove -I../lib 01-client-discovery.t -w -o -v>
-
-NB: is also run as part of dzil test
-
-=cut
-
-use 5.006;
 use strict;
 use warnings;
-use Test::More;
-use Data::Dumper;    ## remove this when finish tweaking
-use Cwd;
+use Test2::V0;
 use CHI;
+use Mojo::File qw/tempdir/;
 
-my $dir   = getcwd;
-my $DEBUG = 0;        ## to see noise of class debugging
+use lib 't/lib';
+use TestTools qw/has_credentials set_credentials DEBUG/;
 
+use WebService::GoogleAPI::Client;
+use WebService::GoogleAPI::Client::Discovery;
 
-use_ok( 'WebService::GoogleAPI::Client' );    #  || print "Bail out!\n";
-use_ok( 'WebService::GoogleAPI::Client::Discovery' );
+my $package = 'WebService::GoogleAPI::Client::Discovery';
+my $tmp = tempdir;
+my $cache = CHI->new(driver => 'File', root_dir => $tmp->to_string);
 
-
-my $default_file = $ENV{ 'GOOGLE_TOKENSFILE' } || "$dir/../../gapi.json";    ## assumes running in a sub of the build dir by dzil
-$default_file = "$dir/../gapi.json" unless -e $default_file;                 ## if file doesn't exist try one level up ( allows to run directly from t/ if gapi.json in parent dir )
-my $user = $ENV{ 'GMAIL_FOR_TESTING' } || '';                                ## will be populated by first available if set to '' and default_file exists
-
+ok my $disco = WebService::GoogleAPI::Client::Discovery->new(chi => $cache), 'instanciation works';
 
 subtest 'WebService::GoogleAPI::Client::Discovery class properties' => sub {
-  ok(
-    ref WebService::GoogleAPI::Client::Discovery->new->ua eq 'WebService::GoogleAPI::Client::UserAgent',
-    'ua property (WebService::GoogleAPI::Client::Discovery->new->ua) is of type WebService::GoogleAPI::Client::UserAgent'
-  );
-  ok(
-    ref( WebService::GoogleAPI::Client::Discovery->new->chi ) =~ /^CHI::Driver/xm,
-    'chi property (WebService::GoogleAPI::Client::Discovery->new->chi) is of sub-type CHI::Driver::'
-  );
-  note( "SESSION DEFAULT CHI Root Directory = " . WebService::GoogleAPI::Client::Discovery->new()->chi->root_dir );
-  ok( WebService::GoogleAPI::Client::Discovery->new->debug eq '0', 'debug property defaults to 0' );
-  ok( WebService::GoogleAPI::Client::Discovery->new( debug => 1 )->debug eq '1', 'debug property when set to 1 on new returns 1' );
+  #TODO- these tests are stupid, ne? bakajanaikana?
+  is ref($disco->ua), 'WebService::GoogleAPI::Client::UserAgent',
+    'ua property is of type WebService::GoogleAPI::Client::UserAgent';
+
+  like ref($disco->chi), qr/^CHI::Driver/xm,
+    'chi property (WebService::GoogleAPI::Client::Discovery->new->chi) is of sub-type CHI::Driver::';
+
+  note( "SESSION DEFAULT CHI Root Directory = " . $disco->chi->root_dir );
+  is $disco->debug, '0', 'debug property defaults to 0';
 };
 
+$disco->debug(DEBUG);
 
-## NB - should probably skip tests that will fail when a dependent test fails
+#TODO- mock away the actual get request...
+# will prevent the occasional flake on this in the future
+subtest 'discover_all' => sub {
+  subtest 'hits the wire with no cache' => sub {
+    like $disco->discover_all->{items}, bag {
+      item hash {
+        field kind => "discovery#directoryItem";
+        field id => "gmail:v1";
+        field name => "gmail";
+        field version => "v1";
+        field title => "Gmail API";
+        etc;
+      };
+      etc;
+    }, 'got a reasonable discovery document';
+    like $disco->stats, {
+      cache => { get => 0 },
+      network => { get => 1 }
+    }, 'used the network';
+  };
+
+  subtest 'uses cache if available' => sub {
+    like $disco->discover_all->{items}, bag {
+      item hash {
+        field kind => "discovery#directoryItem";
+        field id => "gmail:v1";
+        field name => "gmail";
+        field version => "v1";
+        field title => "Gmail API";
+        etc;
+      };
+      etc;
+    }, 'got a reasonable discovery document';
+    like $disco->stats, {
+      cache => { get => 1 },
+      network => { get => 1 }
+    }, 'used the cache';
+  };
+
+  subtest 'Ignores cache if passed $force flag' => sub {
+    like $disco->discover_all(1)->{items}, bag {
+      item hash {
+        field kind => "discovery#directoryItem";
+        field id => "gmail:v1";
+        field name => "gmail";
+        field version => "v1";
+        field title => "Gmail API";
+        etc;
+      };
+      etc;
+    }, 'got a reasonable discovery document';
+    like $disco->stats, {
+      cache => { get => 1 },
+      network => { get => 2 }
+    }, 'used the network';
+  };
+
+  subtest 'Ignores cache if expired' => sub {
+    $disco->chi->set($disco->discover_key, {}, 'now');
+    like $disco->discover_all->{items}, bag {
+      item hash {
+        field kind => "discovery#directoryItem";
+        field id => "gmail:v1";
+        field name => "gmail";
+        field version => "v1";
+        field title => "Gmail API";
+        etc;
+      };
+      etc;
+    }, 'got a reasonable discovery document';
+
+    like $disco->stats, {
+      cache => { get => 1 },
+      network => { get => 3 }
+    }, 'used the network';
+  };
+
+  subtest 'Uses authenticated request when asked' => sub {
+    skip_all 'needs real credentials' unless has_credentials;
+    my $obj = $disco->new;
+    set_credentials($obj);
+    like $obj->discover_all(1,1)->{items}, bag {
+      item hash {
+        field kind => "discovery#directoryItem";
+        field id => "gmail:v1";
+        field name => "gmail";
+        field version => "v1";
+        field title => "Gmail API";
+        etc;
+      };
+      etc;
+    }, 'got a reasonable discovery document';
+    like $obj->stats, {
+      network => { authorized => 1 }
+    }, 'used the credentials';
+  };
+}; #end of discover_all subtest
+
+subtest 'Augmenting the api' => sub {
+  my $to_augment = {
+    'version' => 'v4',
+    'preferred' => 1,
+    'title' => 'Google My Business API',
+    'description' => 'The Google My Business API provides an interface for managing business location information on Google.',
+    'id' => 'mybusiness:v4',
+    'kind' => 'discovery#directoryItem',
+    'documentationLink' => "https://developers.google.com/my-business/",
+    'icons' => {
+      "x16"=> "http://www.google.com/images/icons/product/search-16.gif",
+      "x32"=> "http://www.google.com/images/icons/product/search-32.gif"
+    },
+    'discoveryRestUrl' =>
+    'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
+    'name' => 'mybusiness'
+  };
+
+  $disco->augment_with($to_augment);
+  like $disco->discover_all->{items}, bag {
+    item hash {
+      field $_ => $to_augment->{$_} for qw/kind id name version title/;
+      etc;
+    };
+    etc;
+  }, 'got back what we just added';
+
+};
+
+subtest 'checking for API availablity' => sub {
+  #NOTE- this is used a lot internally, so let's just make sure it
+  #      does what we want
+  my $list = $disco->available_APIs;
+
+  like $list, hash {
+    field gmail => hash {
+      field version => bag { item 'v1'; etc; };
+      field documentationLink => bag { item 'https://developers.google.com/gmail/api/'; etc; };
+      field discoveryRestUrl => bag { item 'https://gmail.googleapis.com/$discovery/rest?version=v1'; etc; };
+      end;
+    };
+    etc;
+  }, 'collapsed structure as expected';
+
+  subtest 'service_exists' => sub {
+    ok !$disco->service_exists('yourfez'), 'non-extant tells us such';
+    ok $disco->service_exists('gmail'), 'verified that gmail exists';
+    ok !$disco->service_exists('Gmail'), 'is case sensitive';
+    ok $disco->service_exists('youtubeAnalytics'), 'gets youtube analytics';
+  };
+
+  subtest 'available_version' => sub {
+    is $disco->available_versions('gmail'), [ 'v1' ], 'got gmail';
+    is $disco->available_versions('GMAIL'), [], 'case sensitive gmail';
+    is $disco->available_versions('firestore'), bag { item $_ for qw/v1 v1beta1 v1beta2/; end },
+      'got many versions for firestore';
+    is $disco->available_versions('youtubeAnalytics'), [ 'v2' ],
+      'got correct only one version for youtube analytics';
+    is $disco->available_versions('yourfez'), [], 'empty for non-existant';
+  };
+
+  subtest 'latest_stable_version' => sub {
+    is $disco->latest_stable_version('gmail'), 'v1', 'got for gmail';
+    is $disco->latest_stable_version('compute'), 'v1', 'got for compute';
+    is $disco->latest_stable_version('bigqueryreservation'),
+      'v1', 'ignores alphas AND betas';
+  };
+
+  subtest 'list_api_ids' => sub {
+    for my $id (qw/gmail compute bigqueryreservation/) {
+      like scalar($disco->list_api_ids), qr/$id/,
+        "has an entry for $id in scalar mode";
+      like [ $disco->list_api_ids ], bag {
+        item $id;
+        etc;
+      }, "has an entry for $id in list mode";
+    }
+  };
+
+  subtest 'process_api_version' => sub {
+    is $disco->process_api_version('gmail'), 
+      { api => 'gmail', version => 'v1' },
+      'got default';
+
+    is $disco->process_api_version({ api => 'gmail' }), 
+      { api => 'gmail', version => 'v1' },
+      'got default from hashref';
+
+    is $disco->process_api_version('gmail:v9000'), 
+      { api => 'gmail', version => 'v9000' },
+      'take a version if given (even if imaginary)';
+
+    is $disco->process_api_version({ api => 'gmail', version => 'v2' }), 
+      { api => 'gmail', version => 'v2' },
+      'take a version if given';
+
+    like dies { $disco->process_api_version('fleurbop') },
+      qr/fleurbop .* not .* valid .* API/, 'errors on non-found api';
+  };
+
+};
+
+# TODO - we need to deal with issues when you can't find a method. 
+# We had a bug once where google updated, but our cached discovery document
+# didn't and we kept crashing b/c it couldn't find the old version that we were
+# using (b/c we were relying on the default version, i think)
+done_testing;
+
+__DATA__
+#we'll get back to these eventually
+
 subtest 'Naked instance method tests (without Client parent container)' => sub {
+  subtest 'Getting api id for gmail' => sub {
+    like scalar($disco->list_of_available_google_api_ids), qr/gmail/xm, 'gets id from a string in scalar context';
+    like [ $disco->list_of_available_google_api_ids ], bag {
+      item qr/gmail/;
+      etc;
+    }, 'gets it in list context too';
+  };
 
-  ok( ref( WebService::GoogleAPI::Client->new->api_query() ) eq 'Mojo::Message::Response', "WebService::GoogleAPI::Client->new->api_query() is a 'Mojo::Message::Response'" );
-  ok(
-    WebService::GoogleAPI::Client::Discovery->new->list_of_available_google_api_ids() =~ /gmail/xm,
-    'WebService::GoogleAPI::Client::Discovery->new->list_of_available_google_api_ids()'
-  );
-
-  ok( ref( WebService::GoogleAPI::Client::Discovery->new->discover_all() ) eq 'HASH', 'WebService::GoogleAPI::Client::Discovery->new->discover_all() return HASREF' );
-  ok(
-    ref( WebService::GoogleAPI::Client::Discovery->new->augment_discover_all_with_unlisted_experimental_api() ) eq 'HASH',
-    ' WebService::GoogleAPI::Client::Discovery->new->augment_discover_all_with_unlisted_experimental_api() returns HASHREF'
-  );
   ok(
     length( WebService::GoogleAPI::Client::Discovery->new->supported_as_text ) > 100,
     'WebService::GoogleAPI::Client::Discovery->new->supported_as_text() returns string > 100 chars'
@@ -190,7 +381,7 @@ subtest 'Discovery methods with User Configuration' => sub {
 #ok( ref $gapi->auth_storage->setup( { type => 'jsonfile', path => $default_file } ) eq 'WebService::GoogleAPI::Client::AuthStorage', 'auth_storage returns WebService::GoogleAPI::Client::AuthStorage');
 
   ok( my $gapi = WebService::GoogleAPI::Client->new( debug => $DEBUG, gapi_json => $default_file ), 'Creating test session instance of WebService::GoogleAPI::Client' );
-  ok( my $aref_token_emails = $gapi->auth_storage->storage->get_token_emails_from_storage, 'Load token emails from config' );
+  ok( my $aref_token_emails = $gapi->auth_storage->get_token_emails_from_storage, 'Load token emails from config' );
   if ( !$user )    ## default to the first user in config file if none defined yet
   {
     ok( $user = $aref_token_emails->[0], "setting test user to first configured entry in config - '$user'" );
@@ -204,9 +395,7 @@ subtest 'Discovery methods with User Configuration' => sub {
 
     ok( $gapi->user( $user ) eq $user, "\$gapi->user('$user') eq '$user'" );
 
-#$ENV{CHI_FILE_PATH} = $ENV{TMPDIR};
     plan( skip_all => 'Skipping network impacting tests unless ENV VAR CHI_FILE_PATH is set' ) unless defined $ENV{ CHI_FILE_PATH };
-
 
     ok(
       my $chi = CHI->new(
@@ -234,7 +423,7 @@ subtest 'Discovery methods with User Configuration' => sub {
     ##  ensure that tests don't fail when Google blocks discovery requests for unauthenticated users
     ##  due to exceeding access limits.
 
-    ## DISCOVERY ALL - RETURNS THE DESCIVOERY STRUCTURE DESCRIBING ALL GOOGLE SERVICE API ID's (gmail,calendar etc)
+    ## DISCOVERY ALL - RETURNS THE DISCOVERY STRUCTURE DESCRIBING ALL GOOGLE SERVICE API ID's (gmail,calendar etc)
    #ok( my $ret = WebService::GoogleAPI::Client->new( chi => $chi )->discovery->new->discover_all, 'WebService::GoogleAPI::Client::Discovery->new->discover_all returns something');
     ok( ref( $gapi->discover_all ) eq 'HASH', 'Client->discover_all returns HASHREF' );
     ok( join( ',', sort keys( %{ WebService::GoogleAPI::Client::Discovery->new->discover_all() } ) ) eq 'discoveryVersion,items,kind',
@@ -260,7 +449,7 @@ subtest 'Discovery methods with User Configuration' => sub {
     ok( keys %{ $gapi->extract_method_discovery_detail_from_api_spec( 'not-a-google-service.list' ) } == 0,
       "WebService::GoogleAPI::Client->extract_method_discovery_detail_from_api_spec('not-a-google-service.list') returns empty hashref" );
 
-    ok( scalar( [$gapi->get_scopes_as_array()] ) > 0, 'more than 0 scopes returned from config' );
+    ok @$gapi->scopes + 0, 'more than 0 scopes returned from config';
     ok(
       $gapi->has_scope_to_access_api_endpoint( "gmail.users.messages.send" ) =~ /^0|1$/xmg,
       'has_scope_to_access_api_endpoint("gmail.users.messages.send") returns either 0 or 1'
