@@ -2,6 +2,7 @@ use strictures;
 
 package WebService::GoogleAPI::Client::UserAgent;
 
+# VERSION
 # ABSTRACT: User Agent wrapper for working with Google APIs
 
 use Moo;

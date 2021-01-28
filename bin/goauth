@@ -4,6 +4,8 @@ use strictures;
 
 package goauth;
 
+# VERSION
+
 use Carp;
 use Mojolicious::Lite;
 use Config::JSON;

@@ -1,6 +1,8 @@
 use strictures;
 package WebService::GoogleAPI::Client::AuthStorage::ServiceAccount;
 
+# VERSION
+
 # ABSTRACT: Manage access tokens from a service account file
 
 =head1 SYNOPSIS

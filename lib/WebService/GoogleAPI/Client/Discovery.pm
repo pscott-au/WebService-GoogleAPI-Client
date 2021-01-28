@@ -2,6 +2,8 @@ use strictures;
 
 package WebService::GoogleAPI::Client::Discovery;
 
+# VERSION
+
 # ABSTRACT: Google API discovery service
 
 =head2 MORE INFORMATION

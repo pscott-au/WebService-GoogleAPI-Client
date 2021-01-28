@@ -3,6 +3,8 @@ use 5.14.0;
 
 package WebService::GoogleAPI::Client;
 
+# VERSION
+
 use Data::Dump qw/pp/;
 use Moo;
 use WebService::GoogleAPI::Client::UserAgent;

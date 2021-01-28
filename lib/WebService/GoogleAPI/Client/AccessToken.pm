@@ -1,5 +1,7 @@
 package WebService::GoogleAPI::Client::AccessToken;
 
+# VERSION
+
 # ABSTRACT: A small class for bundling user and scopes with a token
 use Moo;
 

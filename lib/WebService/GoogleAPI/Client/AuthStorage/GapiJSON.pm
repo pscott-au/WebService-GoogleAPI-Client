@@ -2,6 +2,7 @@ use strictures;
 
 package WebService::GoogleAPI::Client::AuthStorage::GapiJSON;
 
+# VERSION
 # ABSTRACT: Auth Storage Backend based on gapi.json
 
 use Moo;

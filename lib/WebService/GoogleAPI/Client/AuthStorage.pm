@@ -3,6 +3,8 @@ package WebService::GoogleAPI::Client::AuthStorage;
 
 # ABSTRACT: Role for classes which store your auth credentials
 
+# VERSION
+
 use Moo::Role;
 use Carp;
 use WebService::GoogleAPI::Client::AccessToken;
