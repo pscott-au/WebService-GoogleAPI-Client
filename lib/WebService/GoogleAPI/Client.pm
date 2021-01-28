@@ -419,6 +419,9 @@ sub api_query {
   }
   carp(pp $params) if $self->debug > 10;
 
+  croak "Missing neccessary scopes to access $params->{api_endpoint_id}"
+    unless $self->has_scope_to_access_api_endpoint($params->{api_endpoint_id});
+
   ## used to collect pre-query validation errors - if set we return a response
   #  with 418 I'm a teapot
   my @teapot_errors = ();
@@ -505,14 +508,9 @@ sub _process_params {
   push(@teapot_errors,
 "method mismatch - you requested a $params->{method} which conflicts with discovery spec requirement for $method_discovery_struct->{httpMethod}"
   ) if ($params->{method} !~ /^$method_discovery_struct->{httpMethod}$/sxim);
-  push(@teapot_errors,
-"Client Credentials do not include required scope to access $params->{api_endpoint_id}"
-    )
-    unless $self->has_scope_to_access_api_endpoint($params->{api_endpoint_id})
-    ;                        ## ensure user has required scope access
-  $params->{path} = $method_discovery_struct->{path}
-    unless $params->{path}
-    ;  ## Set default path iff not set by user - NB - will prepend baseUrl later
+  
+  ## Set default path iff not set by user - NB - will prepend baseUrl later
+  $params->{path} = $method_discovery_struct->{path} unless $params->{path};
   push @teapot_errors, 'path is a required parameter' unless $params->{path};
 
   push @teapot_errors,
@@ -659,39 +657,32 @@ warns and returns 0 on error ( eg user or config not specified etc )
 
 =cut
 
-########################################################
-sub has_scope_to_access_api_endpoint
-{
-  my ( $self, $api_ep ) = @_;
-  return 0 unless defined $api_ep;
-  return 0 if $api_ep eq '';
-  my $method_spec = $self->get_method_details( $api_ep );
+sub has_scope_to_access_api_endpoint {
+  my ($self, $api_ep) = @_;
+  my $method_spec = $self->get_method_details($api_ep);
 
-  if ( keys( %$method_spec ) > 0 )    ## empty hash indicates failure
-  {
+  if (keys %$method_spec) {
     my $configured_scopes = $self->scopes;    ## get user scopes arrayref
     ## create a hashindex to facilitate quick lookups
-    my %configured_scopes_hash = map { s/\/$//xr, 1 } @$configured_scopes;    ## NB r switch as per https://www.perlmonks.org/?node_id=613280 to filter out any trailing '/'
-    my $granted                = 0;                                           ## assume permission not granted until we find a matching scope
-    my $required_scope_count   = 0
-      ; ## if the final count of scope constraints = 0 then we will assume permission is granted - this has proven necessary for the experimental Google My Business because scopes are not defined in the current discovery data as at 14/10/18
-    foreach my $method_scope ( map {s/\/$//xr} @{ $method_spec->{ scopes } } )
-    {
+    my %configured_scopes_hash = map { (s/\/$//xr, 1) } @$configured_scopes;
+    ## NB r switch as per https://www.perlmonks.org/?node_id=613280 to filter
+    #out any trailing '/'
+    my $granted = 0;
+    ## assume permission not granted until we find a matching scope
+    my $required_scope_count = 0;
+    ## if the final count of scope constraints = 0 then we will assume permission is granted - this has proven necessary for the experimental Google My Business because scopes are not defined in the current discovery data as at 14/10/18
+    for my $method_scope (map { s/\/$//xr } @{ $method_spec->{scopes} }) {
       $required_scope_count++;
-      $granted = 1 if defined $configured_scopes_hash{ $method_scope };
-      last if $granted;
+      $granted = 1 if defined $configured_scopes_hash{$method_scope};
+      last         if $granted;
     }
-    $granted = 1 if ( $required_scope_count == 0 );
+    $granted = 1 if $required_scope_count == 0;
     return $granted;
-  }
-  else
-  {
-    return 0;    ## cannot get method spec - warnings should have already been issued - returning - to indicate access denied
+  } else {
+    return 0;
   }
 
 }
-########################################################
-
 
 
 #TODO: Consider rename to return_fetched_google_v1_apis_discovery_structure

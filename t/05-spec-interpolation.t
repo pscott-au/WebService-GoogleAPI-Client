@@ -60,68 +60,64 @@ is $options->{path},
 'interpolates arrayref correctly' ;
 
 subtest 'funky stuff in the jobs api' => sub {
-    # TODO - let's change this to make sure this check doesn't needa happen
-    return fail 'has the scopes', <<MSG
-Need access to the scope https://www.googleapis.com/auth/jobs 
-or https://www.googleapis.com/auth/cloud-platform
-
-If you're supplying your own credentials, please authorize them for said scopes
-(no network access is made, so you can just write it into the gapi.json)
-MSG
-    unless $gapi->has_scope_to_access_api_endpoint('jobs.projects.jobs.delete');
+  my $endpoint = 'jobs.projects.tenants.jobs.delete';
 
   subtest 'Testing {+param} type interpolation options' => sub {
-    my $interpolated = 'https://jobs.googleapis.com/v3/projects/sner/jobs';
+    my @errors;
+    my $interpolated = 'https://jobs.googleapis.com/v4/projects/sner/tenants/your-fez/jobs';
 
-    $options = { api_endpoint_id => 'jobs.projects.jobs.delete',
-      options => {name => 'projects/sner/jobs/bler'} };
-    $gapi->_process_params( $options );
+    $options = {
+      api_endpoint_id => $endpoint,
+      options => {
+        name => 'projects/sner/tenants/your-fez/jobs/bler'
+      }
+    };
+    @errors = $gapi->_process_params( $options );
     is $options->{path}, "$interpolated/bler", 
-      'Interpolates a {+param} that matches the spec pattern';
+      'Interpolates a {+param} that matches the spec pattern', @errors;
 
-    $options = 
-    { api_endpoint_id => 'jobs.projects.jobs.list',
-      options => { parent => 'sner' } };
-    $gapi->_process_params( $options );
-    is $options->{path}, $interpolated, 
-      'Interpolates just the dynamic part of the {+param}, when not matching the spec pattern';
-
-    $options = 
-    { api_endpoint_id => 'jobs.projects.jobs.delete',
-      options => {projectsId => 'sner', jobsId => 'bler'} };
-    $gapi->_process_params( $options );
+    $options->{options} = {projectsId => 'sner', jobsId => 'bler'};
+    @errors = $gapi->_process_params( $options );
 
     is $options->{path}, "$interpolated/bler", 
-      'Interpolates params that match the flatName spec (camelCase)';
+      'Interpolates params that match the flatName spec (camelCase)', @errors;
 
-    $options = 
-    { api_endpoint_id => 'jobs.projects.jobs.delete',
-      options => {projects_id => 'sner', jobs_id => 'bler'} };
-    $gapi->_process_params( $options );
+    $options->{options} = {projects_id => 'sner', jobs_id => 'bler'};
+    @errors = $gapi->_process_params( $options );
 
     is $options->{path}, "$interpolated/bler", 
-      'Interpolates params that match the names in the api description (snake_case)';
+      'Interpolates params that match the names in the api description (snake_case)',
+      @errors;
+
+    $options = {
+      api_endpoint_id => 'jobs.projects.tenants.list',
+      options => { parent => 'sner' }
+    }; 
+    @errors = $gapi->_process_params( $options );
+    is $options->{path}, $interpolated =~ s+/your-fez.*$++r, 
+      'Interpolates just the dynamic part of the {+param}, when not matching the spec pattern',
+      @errors;
 
 
   };
 
 
-  my @errors;
   subtest 'Checking for proper failure with {+params} in unsupported ways' => sub {
-      $options = 
-      { api_endpoint_id => 'jobs.projects.jobs.delete',
-        options => { name => 'sner' } };
-      @errors = $gapi->_process_params( $options );
-      is $errors[0], 'Not enough parameters given for {+name}.', 
-        "Fails if you don't supply enough values to fill the dynamic parts of {+param}";
+    my @errors;
+    $options = {
+      api_endpoint_id => $endpoint,
+      options => { name => 'sner' }
+    };
+    @errors = $gapi->_process_params( $options );
+    is $errors[0], 'Not enough parameters given for {+name}.', 
+      "Fails if you don't supply enough values to fill the dynamic parts of {+param}";
 
-      $options = 
-      { api_endpoint_id => 'jobs.projects.jobs.delete',
-        options => { jobsId => 'sner' } };
-      @errors = $gapi->_process_params( $options );
-      is $errors[0], 'Missing a parameter for {projectsId}.', 
-        "Fails if you don't supply enough values to fill the flatPath";
-
+    $options = 
+    { api_endpoint_id => $endpoint,
+      options => { jobsId => 'sner' } };
+    @errors = $gapi->_process_params( $options );
+    is $errors[0], 'Missing a parameter for {projectsId}.', 
+      "Fails if you don't supply enough values to fill the flatPath";
   };
 
 };
