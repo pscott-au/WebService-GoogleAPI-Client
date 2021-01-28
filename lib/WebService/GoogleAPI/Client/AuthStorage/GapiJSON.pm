@@ -1,6 +1,6 @@
 use strictures;
 
-package WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
+package WebService::GoogleAPI::Client::AuthStorage::GapiJSON;
 
 # ABSTRACT: Specific methods to fetch tokens from JSON data sources
 

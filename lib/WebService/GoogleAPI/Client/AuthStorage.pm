@@ -24,7 +24,7 @@ use WebService::GoogleAPI::Client::AccessToken;
   ... # and now your class manages the access_tokens
 
 WebService::GoogleAPI::Client::AuthStorage is a Moo::Role for auth storage backends.
-This dist comes with two consumers, L<WebService::GoogleAPI::Client::AuthStorage::ConfigJSON>
+This dist comes with two consumers, L<WebService::GoogleAPI::Client::AuthStorage::GapiJSON>
 and L<WebService::GoogleAPI::Client::AuthStorage::ServiceAccount>. See those for more info
 on how you can use them with L<WebService::GoogleAPI::Client>.
 

@@ -7,7 +7,7 @@ use Data::Dump qw/pp/;
 use Moo;
 use WebService::GoogleAPI::Client::UserAgent;
 use WebService::GoogleAPI::Client::Discovery;
-use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
+use WebService::GoogleAPI::Client::AuthStorage::GapiJSON;
 use WebService::GoogleAPI::Client::AuthStorage::ServiceAccount;
 use Carp;
 use CHI;
@@ -235,7 +235,7 @@ sub BUILD {
   if ($params->{auth_storage}) {
     $storage = $params->{auth_storage};
   } elsif ($file = $params->{gapi_json}) {
-    $storage = WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new(path => $file);
+    $storage = WebService::GoogleAPI::Client::AuthStorage::GapiJSON->new(path => $file);
   } elsif ($file = $params->{service_account}) {
     $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
       path => $file, scopes => $params->{scopes});

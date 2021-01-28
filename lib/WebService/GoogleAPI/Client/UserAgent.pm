@@ -8,7 +8,7 @@ use Moo;
 
 extends 'Mojo::UserAgent';
 #extends 'Mojo::UserAgent::Mockable';
-use WebService::GoogleAPI::Client::AuthStorage::ConfigJSON;
+use WebService::GoogleAPI::Client::AuthStorage::GapiJSON;
 use Mojo::UserAgent;
 use Data::Dump qw/pp/;    # for dev debug
 
@@ -19,7 +19,7 @@ has 'debug'                         => ( is => 'rw', default => 0 );
 has 'auth_storage' => ( 
   is => 'rw', 
   default => sub {
-    WebService::GoogleAPI::Client::AuthStorage::ConfigJSON->new
+    WebService::GoogleAPI::Client::AuthStorage::GapiJSON->new
   },
   handles => [qw/get_access_token scopes user/],
   trigger => 1,
