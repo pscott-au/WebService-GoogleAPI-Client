@@ -1,6 +1,6 @@
 package WebService::GoogleAPI::Client::AccessToken;
 
-# ABSTRACT - A small class for bundling user and scopes with a token
+# ABSTRACT: A small class for bundling user and scopes with a token
 use Moo;
 
 use overload '""' => sub { shift->token };

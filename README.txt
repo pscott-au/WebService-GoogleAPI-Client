@@ -406,7 +406,7 @@ AUTHORS
 
 COPYRIGHT AND LICENSE
 
-    This software is Copyright (c) 2017-2020 by Peter Scott and others.
+    This software is Copyright (c) 2017-2021 by Peter Scott and others.
 
     This is free software, licensed under:
 
