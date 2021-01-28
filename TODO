@@ -1,9 +1,5 @@
 # vim: ft=markdown
 
-# change Changes file 
-
-I think i'll use whatever is used in [@Starter]'s managed_versions
-
 # better support for service accounts
 
 We did a number on the architecture to allow for pluggable storage backends.

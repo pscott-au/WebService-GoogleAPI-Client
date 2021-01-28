@@ -8,12 +8,13 @@ VERSION
 
 SYNOPSIS
 
-    Access Google API Services Version 1 using an OAUTH2 User Agent.
+    Access Google API Services using an OAUTH2 User Agent.
 
-    Includes Discovery, validation authentication and API Access.
+    Includes Discovery, validation, authentication and API Access.
 
-    assumes gapi.json configuration in working directory with scoped Google
-    project credentials and user authorization created by _goauth_
+    By default assumes gapi.json configuration in working directory with
+    scoped Google project credentials and user authorization created by
+    goauth.
 
         use WebService::GoogleAPI::Client;
         
@@ -27,11 +28,13 @@ SYNOPSIS
           say 'User has Access to GMail Method End-Point gmail.users.settings.sendAs.get';
         }
 
-    Internal User Agent provided be property
-    WebService::GoogleAPI::Client::UserAgent dervied from Mojo::UserAgent
-
     Package includes goauth CLI Script to collect initial end-user
-    authorisation to scoped services
+    authorisation to scoped services.
+
+    Note to intrepid hackers: Any method that isn't documented is
+    considered private, and subject to change in breaking ways without
+    notice. (Although I'm a pretty nice guy, and probably will leave a
+    warning or something).
 
 EXAMPLES
 
