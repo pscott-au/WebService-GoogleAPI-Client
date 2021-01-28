@@ -1,0 +1,5 @@
+{{$NEXT}}
+
+ENHANCEMENTS
+- add support for service accounts
+- rework storage backend to allow custom implementations (here's looking at you, redis)
