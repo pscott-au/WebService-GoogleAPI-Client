@@ -13,21 +13,11 @@ L<https://developers.google.com/discovery/v1/reference/>
 Not using Swagger but it is interesting - 
 L<https://github.com/APIs-guru/openapi-directory/tree/master/APIs/googleapis.com> for Swagger Specs.
 
-L<Google::API::Client> - contains code for parsing discovery structures 
+L<WebService::GoogleAPI::Client> - contains code for parsing discovery structures 
 
 includes a chi property that is an instance of CHI using File Driver to cache discovery resources for 30 days
 
 say $client-dicovery->chi->root_dir(); ## provides full file path to temp storage location used for caching
-
-=head2 TODO
-
-=over 2
-
-=item * handle 403 (Daily Limit for Unauthenticated Use Exceeded)
-
-errors when reqeusting a discovery resource for a service but do we have access to authenticated reqeusts?
-
-=back
 
 =cut
 
@@ -36,7 +26,6 @@ use Carp;
 use WebService::GoogleAPI::Client::UserAgent;
 use List::Util qw/uniq reduce/;
 use List::SomeUtils qw/pairwise/;
-use Hash::Slice qw/slice/;
 use Data::Dump qw/pp/;
 use CHI;
 

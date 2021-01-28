@@ -6,15 +6,9 @@ package goauth;
 
 use Carp;
 use Mojolicious::Lite;
-use Path::Class;
 use Config::JSON;
-use Tie::File;
 use feature 'say';
 use Net::EmptyPort qw(empty_port);
-
-use Crypt::JWT qw(decode_jwt);
-
-
 
 # ABSTRACT: CLI tool with mini http server for negotiating Google OAuth2 Authorisation access tokens that allow offline access to Google API Services on behalf of the user.
 
@@ -108,9 +102,6 @@ WebService::Google:API:Client Google API Client Library.
 
 =cut
 
-#use Path::Class; # ::File; ## cros-platform file paths handling # Exports file() by default
-
-
 
 
 my $filename = $ARGV[0] || 'gapi.json';
@@ -164,10 +155,6 @@ sub setup
   $tokensfile->set( 'gapi/scopes',        $oauth->{ scopes } );
   say 'OAuth details  updated!';
 
-  # Remove comment for Mojolicious::Plugin::JSONConfig compatibility
-  #tie my @array, 'Tie::File', $file->absolute() or croak $!;
-  #shift @array;
-  #untie @array;
   return 1;
 }
 
