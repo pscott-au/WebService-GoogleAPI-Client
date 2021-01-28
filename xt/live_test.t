@@ -1,4 +1,5 @@
 use Test2::V0;
+use Test2::Tools::Spec;
 
 # TODO - make a simple test which creates a file, lists it, then deletes it, for
 # both a service account and a regular account.
@@ -28,9 +29,34 @@ my $u = WebService::GoogleAPI::Client->new(
 );
 
 my $s = WebService::GoogleAPI::Client->new(
-  service_account => $service_creds
+  service_account => $service_creds,
+  scopes => [ 'https://www.googleapis.com/auth/drive' ]
 );
 
+my $filename = 'a-rather-unlikely-named-file-for-xt-testing';
+
+describe 'file creation and deletion' => sub {
+  my $ua;
+  case 'user account'    => sub { $ua = $u };
+  case 'service account' => sub { $ua = $s };
+
+  tests 'doing it' => sub {
+    my $res = $ua->api_query({
+        api_endpoint_id => 'drive.files.create',
+        options => { name => $filename }
+      });
+
+    is $res->json('/name'), $filename, 'request worked';
+    my $id = $res->json('/id');
+
+    $res = $ua->api_query({
+        api_endpoint_id => 'drive.files.delete',
+        options => { fileId => $id }
+      });
+
+    is $res->code, 204, 'delete went as planned';
+  };
+};
 
 
 done_testing;
