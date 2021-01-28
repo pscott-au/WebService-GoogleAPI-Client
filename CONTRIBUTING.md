@@ -4,6 +4,18 @@ There are some live tests in `xt/` which require real user credentials. All they
 do is create a file in Google Drive, and then delete it, in order to make sure that 
 things are ACTUALLY running.
 
+If you don't trust me, then please don't run those tests. They're part of the
+release process, so I'll just run them before releasing.
+
+If you DO trust me (and I'm flattered), then you need to set the
+`GAPI_XT_USER_CREDS` environment variable to a string containing the gapi.json
+file, followed by `:` followed by the user to user. Like this:
+
+    /absolute/path/to/gapi.json:your_email@gmail.com
+
+And also set the `GAPI_XT_SERVICE_CREDS` to the service account file downloaded
+from Google.
+
 # Bug Reporting and General Help Requests
 
 - Use the [Github Issues Page](https://github.com/rabbiveesh/WebService-GoogleAPI-Client/issues) 
@@ -30,7 +42,6 @@ things are ACTUALLY running.
 - API worked examples with help functions
 - ability to examine CHI cache and introspect on Client instance metrics ( number of HTTP calls, cache size, TTL data sent/received etc )
 - comparison with other language Client libraries
-- The structure under the AuthStorage is ugly and needs some love
 
 
 Github Repo: [https://github.com/pscott-au/WebService-GoogleAPI-Client]
