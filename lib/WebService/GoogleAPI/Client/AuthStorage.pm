@@ -97,4 +97,71 @@ around get_access_token => sub {
     user => $user, token => $token, scopes => $scopes );
 };
 
+=method refresh_user_token
+
+Makes the call to Google's OAuth API to refresh a token for a user.
+Requires one parameter, a hashref with the keys:
+
+=begin :list
+
+= client_id Your OAuth Client ID
+
+= client_secret Your OAuth Client Secret
+
+= refresh_token The refresh token for the user
+
+=end :list
+
+Will return the token from the API, for the backend to store (wherever it pleases).
+
+Will die with the error message from Google if the refresh fails.
+
+=cut
+
+sub refresh_user_token {
+  my ($self, $params) = @_;
+  my $tx = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' =>
+    form => { %$params, grant_type => 'refresh_token' }
+  );
+  my $new_token = $tx->res->json('/access_token');
+  unless ($new_token) {
+    croak "Failed to refresh access token: ",
+      join ' - ', map $tx->res->json("/$_"), qw/error error_description/
+      if $tx->res->json;
+    # if the error doesn't come from google
+    croak "Unknown error refreshing access token";
+  }
+
+  return $new_token
+}
+
+
+=method refresh_service_account_token
+
+Makes the call to Google's OAuth API to refresh a token for a service account.
+Requires one parameter, a L<Mojo::JWT::Google> object already set with the user
+and scopes requested.
+
+Will return the token from the API, for the backend to store (wherever it pleases).
+
+Will die with the error message from Google if the refresh fails.
+
+=cut
+
+sub refresh_service_account_token {
+  my ($self, $jwt) = @_;
+  my $tx = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' => form =>
+    $jwt->as_form_data
+  );
+  my $new_token = $tx->res->json('/access_token');
+  unless ($new_token) {
+    croak "Failed to get access token: ",
+      join ' - ', map $tx->res->json("/$_"), qw/error error_description/
+      if $tx->res->json;
+    # if the error doesn't come from google
+    croak "Unknown error getting access token";
+  }
+  return $new_token
+}
+
 1;

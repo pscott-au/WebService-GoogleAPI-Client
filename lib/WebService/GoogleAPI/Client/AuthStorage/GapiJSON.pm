@@ -88,18 +88,9 @@ https://myaccount.google.com/permissions as The oauth2 server will only ever min
 token at a time, and if you request another access token via the flow it will operate as if
 you only asked for an access token.
 MISSINGCREDS
-  $p{grant_type} = 'refresh_token';
   my $user = $self->user;
 
-  my $tx = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' => form => \%p);
-  my $new_token = $tx->res->json('/access_token');
-  unless ($new_token) {
-    croak "Failed to refresh access token: ",
-      join ' - ', map $tx->res->json("/$_"), qw/error error_description/
-      if $tx->res->json;
-    # if the error doesn't come from google
-    croak "Unknown error refreshing access token";
-  }
+  my $new_token = $self->refresh_user_token(\%p);
 
   $self->tokensfile->set("gapi/tokens/$user/access_token", $new_token);
   return $new_token;

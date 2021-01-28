@@ -123,16 +123,7 @@ sub refresh_access_token {
     $self->jwt->user_as(undef)
   }
 
-  my $tx = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' => form =>
-    $self->jwt->as_form_data);
-  my $new_token = $tx->res->json('/access_token');
-  unless ($new_token) {
-    croak "Failed to get access token: ",
-      join ' - ', map $tx->res->json("/$_"), qw/error error_description/
-      if $tx->res->json;
-    # if the error doesn't come from google
-    croak "Unknown error getting access token";
-  }
+  my $new_token = $self->refresh_service_account_token($self->jwt);
 
   $self->tokens->{$self->scopes_string}{$self->user} = $new_token;
   return $new_token
