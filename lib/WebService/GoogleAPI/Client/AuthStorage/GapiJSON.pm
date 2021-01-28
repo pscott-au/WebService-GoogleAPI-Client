@@ -66,8 +66,10 @@ sub get_access_token {
 
 =method refresh_access_token
 
-This will refresh the access token for the currently set C<user>. If you don't
-have a refresh token for that user, it will die with the following message.
+This will refresh the access token for the currently set C<user>. Will write the
+new token back into the gapi.json file.
+
+If you don't have a refresh token for that user, it will die with the following message:
 
 If your credentials are missing the refresh_token - consider removing the auth at
 https://myaccount.google.com/permissions as The oauth2 server will only ever mint one refresh
