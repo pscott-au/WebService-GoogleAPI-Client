@@ -1,4 +1,5 @@
 use Test2::V0;
+use Test2::Require::Internet;
 use lib 't/lib';
 use TestTools qw/gapi_json DEBUG user/;
 use WebService::GoogleAPI::Client;
