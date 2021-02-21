@@ -4,7 +4,7 @@ NAME
 
 VERSION
 
-    version 0.24_001
+    version 0.25
 
 SYNOPSIS
 
