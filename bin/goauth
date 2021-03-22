@@ -12,6 +12,7 @@ use Mojo::File qw/path/;
 use Config::JSON;
 use feature 'say';
 use Net::EmptyPort qw(empty_port);
+use Crypt::JWT qw(decode_jwt);
 
 # ABSTRACT: CLI tool with mini http server for negotiating Google OAuth2 Authorisation access tokens that allow offline access to Google API Services on behalf of the user.
 
