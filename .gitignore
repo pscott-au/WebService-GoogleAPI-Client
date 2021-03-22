@@ -28,3 +28,7 @@ examples/*.png
 **/delme*
 *.json
 docs/cover/*
+
+.yath.user.rc
+.*.sw?
+.perl-version

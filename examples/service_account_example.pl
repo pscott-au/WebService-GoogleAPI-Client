@@ -1,61 +1,33 @@
 #!/usr/bin/env perl
 
 use strictures;
-## use Crypt::JWT qw(encode_jwt); -- couldn't get this to work
-use Data::Dump qw/pp/;
-use feature 'say';
-use LWP::UserAgent;
-use JSON;
-use Mojo::File;
-use Mojo::JWT; ## there is also Mojo::JWT::Google but the cpan version is broken - pull request submitted but is easy enough to use parent Mojo::JWT
+use Data::Printer;
+use Mojo::UserAgent;
+use Mojo::JWT::Google;
 
 my $config = {
     path => $ARGV[0] // '/Users/peter/Downloads/computerproscomau-b9f59b8ee34a.json',
     scopes => $ARGV[1] //  'https://www.googleapis.com/auth/plus.business.manage https://www.googleapis.com/auth/compute'
 };
 
-my $jwt = mojo_jwt_from_json_or_croak( $config->{path}, $config->{scopes} );
-my $ua = LWP::UserAgent->new(); #WWW::Mechanize->new( autocheck => 1 ); 
+my $jwt = Mojo::JWT::Google->new( from_json => $config->{path}, scopes => [ split / /, $config->{scopes} ] );
 
-my $response = $ua->post('https://www.googleapis.com/oauth2/v4/token', { 'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer', 
-     'assertion' =>  $jwt }
+my $ua = Mojo::UserAgent->new(); 
+
+my $response = $ua->post('https://www.googleapis.com/oauth2/v4/token', form => { 'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer', 
+     'assertion' =>  $jwt->encode }
      ); 
 
-if ($response->is_success) 
+if ($response->res) 
 {
-    print $response->decoded_content;
+    p $response->res->json;
 }
 else 
 {
-    print STDERR $response->status_line, "\n";
+    warn $response->res->status, "\n";
 }
+
 exit;
-
-#######################################################################
-sub mojo_jwt_from_json_or_croak
-{
-  my ( $path, $scope ) = @_;
-  croak("No path provided") if not defined $path;
-  croak("$path no available") if not -f $path;
-  my $json = decode_json( Mojo::File->new($path)->slurp );
-  croak("No Private key in $path") if not defined $json->{private_key};
-  croak("Not a service account") if $json->{type} ne 'service_account';
-  my $jwt = Mojo::JWT->new();
-  $jwt->algorithm('RS256');
-  $jwt->secret($json->{private_key});
-
-  $jwt->claims( {
-      iss => $json->{client_email},
-      scope => $scope,
-      aud   => 'https://www.googleapis.com/oauth2/v4/token',   
-      iat => time(),
-      exp => time()+3600   
-  } );
-  $jwt->set_iat( 1 );
-  return $jwt->encode;
-}
-#######################################################################
-
 
 =pod
 
