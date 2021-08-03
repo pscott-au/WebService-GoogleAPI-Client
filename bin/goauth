@@ -79,7 +79,7 @@ application.
 Once you have succesfully created a gapi.json file and have authenticated a user
 that is represented in this file then you can start making Google API Requests.
 
-See L<WebServices::Google::Client> for more detail.
+See L<WebService::Google::Client> for more detail.
 
 
 =head2 gapi.json 
