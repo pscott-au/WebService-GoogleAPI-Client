@@ -26,9 +26,9 @@ say $client-dicovery->chi->root_dir(); ## provides full file path to temp storag
 use Moo;
 use Carp;
 use WebService::GoogleAPI::Client::UserAgent;
-use List::Util qw/uniq reduce/;
+use List::Util      qw/uniq reduce/;
 use List::SomeUtils qw/pairwise/;
-use Data::Dump qw/pp/;
+use Data::Dump      qw/pp/;
 use CHI;
 
 has ua => (
@@ -110,7 +110,7 @@ SEE ALSO: available_APIs, list_of_available_google_api_ids
 
 =cut
 
-sub discover_key {'https://www.googleapis.com/discovery/v1/apis'}
+sub discover_key { 'https://www.googleapis.com/discovery/v1/apis' }
 
 sub discover_all {
   my $self = shift;
@@ -119,6 +119,7 @@ sub discover_all {
 
 #TODO- double triple check that we didn't break anything with the
 #hashref change
+
 =head2 C<available_APIs>
 
 Return hashref keyed on api name, with arrays of versions, links to 
@@ -141,11 +142,13 @@ Used internally to pull relevant discovery documents.
 
 #TODO- maybe cache this on disk too?
 my $available;
+
 sub _invalidate_available {
   $available = undef;
 }
 
 sub available_APIs {
+
   #cache this crunch
   return $available if $available;
 
@@ -160,12 +163,12 @@ sub available_APIs {
   for my $i (@{ $d_all->{items} }) {
     next unless @keys == grep { exists $i->{$_} } @keys;
     push @relevant, { %{$i}{@keys} };
-  };
+  }
 
   my $reduced = reduce {
     for my $key (qw/version documentationLink discoveryRestUrl/) {
-      $a->{$b->{name}}->{$key} //= [];
-      push @{$a->{$b->{name}}->{$key}}, $b->{$key};
+      $a->{ $b->{name} }->{$key} //= [];
+      push @{ $a->{ $b->{name} }->{$key} }, $b->{$key};
     }
     $a;
   } {}, @relevant;
@@ -228,7 +231,7 @@ sub augment_with {
   push @{ $all->{items} }, $api_spec;
   $self->chi->set($self->discover_key, $all, '30d');
   $self->_invalidate_available;
-  return $all
+  return $all;
 }
 
 
@@ -248,7 +251,7 @@ check the documentation from Google for reference.
 sub service_exists {
   my ($self, $api) = @_;
   return unless $api;
-  return $self->available_APIs->{$api}
+  return $self->available_APIs->{$api};
 }
 
 =head2 C<available_versions>
@@ -265,7 +268,7 @@ sub service_exists {
 sub available_versions {
   my ($self, $api) = @_;
   return [] unless $api;
-  return $self->available_APIs->{$api}->{version} // []
+  return $self->available_APIs->{$api}->{version} // [];
 }
 
 =head2 C<latest_stable_version>
@@ -288,7 +291,8 @@ sub latest_stable_version {
   return '' unless $api;
   my $versions = $self->available_versions($api);
   return '' unless $versions;
-  return '' unless @{ $versions } > 0;
+  return '' unless @{$versions} > 0;
+
   #remove alpha or beta versions
   my @stable = grep { !/beta|alpha/ } @$versions;
   return $stable[-1] || '';
@@ -310,6 +314,7 @@ given, then default to the latest stable version in the discover document.
 
 sub process_api_version {
   my ($self, $params) = @_;
+
   # scalar parameter not hashref - so assume is intended to be $params->{api}
   $params = { api => $params } if ref $params eq '';
 
@@ -329,7 +334,7 @@ sub process_api_version {
   }
 
   $params->{version} //= $self->latest_stable_version($params->{api});
-  return $params
+  return $params;
 }
 
 
@@ -357,20 +362,20 @@ sub get_api_discovery_for_api_id {
 This long method name (get_api_discovery_for_api_id) is being deprecated
 in favor of get_api_document. Please switch your code soon
 DEPRECATION
-  shift->get_api_document(@_)
+  shift->get_api_document(@_);
 }
 
 sub get_api_document {
   my ($self, $arg) = @_;
 
   my $params = $self->process_api_version($arg);
-  my $apis = $self->available_APIs();
+  my $apis   = $self->available_APIs();
 
-  my $api = $apis->{$params->{api}};
+  my $api = $apis->{ $params->{api} };
   croak "No versions found for $params->{api}" unless $api->{version};
 
-  my @versions = @{$api->{version}};
-  my @urls = @{$api->{discoveryRestUrl}};
+  my @versions = @{ $api->{version} };
+  my @urls     = @{ $api->{discoveryRestUrl} };
   my ($url) = pairwise { $a eq $params->{version} ? $b : () } @versions, @urls;
 
   croak "Couldn't find correct url for $params->{api} $params->{version}"
@@ -421,7 +426,7 @@ sub extract_method_discovery_detail_from_api_spec {
 This rather long method name (extract_method_discovery_detail_from_api_spec)
 is being deprecated in favor of get_method_details. Please switch soon
 DEPRECATION
-  shift->get_method_details(@_)
+  shift->get_method_details(@_);
 }
 
 sub get_method_details {
@@ -432,7 +437,7 @@ sub get_method_details {
 
   my @nodes = split /\./smx, $tree;
   croak(
-    "tree structure '$tree' must contain at least 2 nodes including api id, [list of hierarchical resources ] and method - not "
+"tree structure '$tree' must contain at least 2 nodes including api id, [list of hierarchical resources ] and method - not "
       . scalar(@nodes))
     unless @nodes > 1;
 
@@ -448,7 +453,7 @@ sub get_method_details {
   }
 
   ## handle incorrect api_id
-  if ($self->service_exists($api_id) == 0) {
+  if (!$self->service_exists($api_id)) {
     croak("unable to confirm that '$api_id' is a valid Google API service id");
   }
 
@@ -456,8 +461,8 @@ sub get_method_details {
 
 
   ## TODO: confirm that spec available for api version
-  my $api_spec = $self->get_api_document(
-    { api => $api_id, version => $api_version });
+  my $api_spec =
+    $self->get_api_document({ api => $api_id, version => $api_version });
 
 
   ## we use the schemas to substitute into '$ref' keyed placeholders
@@ -477,13 +482,13 @@ sub get_method_details {
     ;    ## second level ( '$ref' in the interpolated schemas from first level )
 
   ## now extract all the methods (recursive )
-  my $all_api_methods
-    = $self->_extract_resource_methods_from_api_spec("$api_id:$api_version",
+  my $all_api_methods =
+    $self->_extract_resource_methods_from_api_spec("$api_id:$api_version",
     $api_spec);
 
   unless (defined $all_api_methods->{$tree}) {
-    $all_api_methods
-      = $self->_extract_resource_methods_from_api_spec($api_id, $api_spec);
+    $all_api_methods =
+      $self->_extract_resource_methods_from_api_spec($api_id, $api_spec);
   }
   if ($all_api_methods->{$tree}) {
 
@@ -497,7 +502,9 @@ sub get_method_details {
     return $all_api_methods->{$tree};
   }
 
-  croak("Unable to find method detail for '$tree' within Google Discovery Spec for $api_id version $api_version")
+  croak(
+"Unable to find method detail for '$tree' within Google Discovery Spec for $api_id version $api_version"
+  );
 }
 ########################################################
 
@@ -585,8 +592,8 @@ sub methods_available_for_google_api_id {
   ## TODO: confirm that spec available for api version
   my $api_spec = $self->get_api_discovery_for_api_id(
     { api => $api_id, version => $version });
-  my $methods
-    = $self->_extract_resource_methods_from_api_spec($api_id, $api_spec);
+  my $methods =
+    $self->_extract_resource_methods_from_api_spec($api_id, $api_spec);
   return $methods;
 }
 ########################################################
@@ -613,14 +620,13 @@ This rather long function name (list_of_available_google_api_ids)
 is being deprecated in favor of the shorter list_api_ids. Please
 update your code accordingly.
 DEPRECATION
-  shift->list_api_ids
+  shift->list_api_ids;
 }
 ## returns a list of all available API Services
 sub list_api_ids {
-  my ($self)   = @_;
-  my @api_list = keys %{$self->available_APIs};
-  return wantarray ? @api_list
-    : join(',', @api_list);
+  my ($self) = @_;
+  my @api_list = keys %{ $self->available_APIs };
+  return wantarray ? @api_list : join(',', @api_list);
 }
 
 
