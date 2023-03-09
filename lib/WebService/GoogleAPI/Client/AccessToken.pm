@@ -8,9 +8,8 @@ use Moo;
 
 use overload '""' => sub { shift->token };
 
-has [ qw/token user scopes/ ] =>
-  is => 'ro',
-  required => 1;
+has [qw/token user scopes/] => is => 'ro',
+    required                => 1;
 
 =head1 SYNOPSIS
 

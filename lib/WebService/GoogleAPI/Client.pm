@@ -18,8 +18,6 @@ use Mojo::Util;
 #TODO- batch requests. The only thing necessary is to send  a
 #multipart request as I wrote in that e-mail.
 #
-#TODO- implement auth for service accounts.
-#
 #TODO- allow using promises instead of just calling. Also allow
 #      for full access to the tx instead of assuming it's always
 #      returning the res. Perhaps mix in something that delegates the
@@ -101,34 +99,23 @@ pretty nice guy, and probably will leave a warning or something).
 
 =cut
 
-has 'debug' => (
-  is => 'rw',
-  default => 0,
-  lazy => 1
-);
+has 'debug' => (is => 'rw', default => 0, lazy => 1);
 has 'ua'    => (
-  handles =>
-    [qw/do_autorefresh auth_storage get_access_token scopes user/],
-  is => 'ro',
-  default =>
-    sub { WebService::GoogleAPI::Client::UserAgent->new(debug => shift->debug) }
-  ,
-  lazy => 1,
+  handles => [qw/do_autorefresh auth_storage get_access_token scopes user/],
+  is      => 'ro',
+  default => sub { WebService::GoogleAPI::Client::UserAgent->new(debug => shift->debug) },
+  lazy    => 1,
 );
 
 sub get_scopes_as_array {
   carp 'get_scopes_as_array has deprecated in favor of the shorter "scopes"';
-  return $_[0]->scopes
+  return $_[0]->scopes;
 }
 
 has 'chi' => (
   is      => 'rw',
   default => sub {
-    CHI->new(
-      driver => 'File',
-      max_key_length => 512,
-      namespace => __PACKAGE__
-    );
+    CHI->new(driver => 'File', max_key_length => 512, namespace => __PACKAGE__);
   },
   lazy => 1
 );
@@ -136,9 +123,9 @@ has 'chi' => (
 has 'discovery' => (
   handles => [
     qw/  discover_all
-      get_method_details
-      get_api_document service_exists
-      methods_available_for_google_api_id list_api_ids  /
+        get_method_details
+        get_api_document service_exists
+        methods_available_for_google_api_id list_api_ids  /
   ],
   is      => 'ro',
   default => sub {
@@ -243,10 +230,14 @@ sub BUILD {
     $storage = WebService::GoogleAPI::Client::AuthStorage::GapiJSON->new(path => $file);
   } elsif ($file = $params->{service_account}) {
     $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
-      path => $file, scopes => $params->{scopes});
+      path   => $file,
+      scopes => $params->{scopes}
+    );
   } elsif ($file = $ENV{GOOGLE_APPLICATION_CREDENTIALS}) {
     $storage = WebService::GoogleAPI::Client::AuthStorage::ServiceAccount->new(
-      path => $file, scopes => $params->{scopes});
+      path   => $file,
+      scopes => $params->{scopes}
+    );
   }
   $self->auth_storage($storage) if $storage;
 
@@ -420,14 +411,14 @@ sub api_query {
   carp(pp $params) if $self->debug > 10;
 
   croak "Missing neccessary scopes to access $params->{api_endpoint_id}"
-    unless $self->has_scope_to_access_api_endpoint($params->{api_endpoint_id});
+      unless $self->has_scope_to_access_api_endpoint($params->{api_endpoint_id});
 
   ## used to collect pre-query validation errors - if set we return a response
   #  with 418 I'm a teapot
   my @teapot_errors = ();
   ## pre-query validation if api_id parameter is included
   @teapot_errors = $self->_process_params($params)
-    if (defined $params->{api_endpoint_id});
+      if (defined $params->{api_endpoint_id});
 
   ## either as param or from discovery
   if (not defined $params->{path}) {
@@ -435,16 +426,15 @@ sub api_query {
     $params->{path} = '';
   }
   push @teapot_errors, "Path '$params->{path}' includes unfilled variable after processing"
-    if ($params->{path} =~ /\{.+\}/xms);
+      if ($params->{path} =~ /\{.+\}/xms);
   ## carp and include in 418 TEAPOT ERROR - response body with @teapot errors
   if (@teapot_errors > 0) {
     carp(join("\n", @teapot_errors)) if $self->debug;
     return Mojo::Message::Response->new(
       content_type => 'text/plain',
       code         => 418,
-      message      =>
-'Teapot Error - Reqeust blocked before submitting to server with pre-query validation errors',
-      body => join("\n", @teapot_errors)
+      message      => 'Teapot Error - Reqeust blocked before submitting to server with pre-query validation errors',
+      body         => join("\n", @teapot_errors)
     );
   } else {
     ## query looks good - send to user agent to execute
@@ -458,13 +448,15 @@ sub api_query {
 sub _ensure_api_spec_has_defined_fields {
   my ($self, $api_discovery_struct) = @_;
   ## Ensure API Discovery has expected fields defined
-  foreach my $expected_key (qw/path title ownerName version id discoveryVersion
-       revision description documentationLink rest/) {
+  foreach my $expected_key (
+    qw/path title ownerName version id discoveryVersion
+    revision description documentationLink rest/
+  ) {
     $api_discovery_struct->{$expected_key} = ''
-      unless defined $api_discovery_struct->{$expected_key};
+        unless defined $api_discovery_struct->{$expected_key};
   }
   $api_discovery_struct->{canonicalName} = $api_discovery_struct->{title}
-    unless defined $api_discovery_struct->{canonicalName};
+      unless defined $api_discovery_struct->{canonicalName};
   return $api_discovery_struct;
 }
 ##################################################
@@ -480,14 +472,14 @@ sub _process_params {
   my ($self, $params) = @_;
 
   croak('this should never happen - this method is internal only!')
-    unless defined $params->{api_endpoint_id};
+      unless defined $params->{api_endpoint_id};
 
   ## $api_discovery_struct requried for service base URL
-  my $api_discovery_struct = $self->_ensure_api_spec_has_defined_fields(
-    $self->discovery->get_api_document($params->{api_endpoint_id}));
+  my $api_discovery_struct
+      = $self->_ensure_api_spec_has_defined_fields($self->discovery->get_api_document($params->{api_endpoint_id}));
   ## remove trailing '/' from baseUrl
   $api_discovery_struct->{baseUrl} =~ s/\/$//sxmg;
-  
+
   ## if can get discovery data for google api endpoint then continue to perform
   #  detailed checks
   my $method_discovery_struct = $self->get_method_details($params->{api_endpoint_id});
@@ -497,35 +489,32 @@ sub _process_params {
   $method_discovery_struct->{origPath} = $method_discovery_struct->{path};
 
   ## allow optional user callback pre-processing of method_discovery_struct
-  $method_discovery_struct =
-    &{ $params->{cb_method_discovery_modify} }($method_discovery_struct)
-    if (defined $params->{cb_method_discovery_modify}
-    && ref($params->{cb_method_discovery_modify}) eq 'CODE');
+  $method_discovery_struct = &{ $params->{cb_method_discovery_modify} }($method_discovery_struct)
+      if (defined $params->{cb_method_discovery_modify}
+        && ref($params->{cb_method_discovery_modify}) eq 'CODE');
 
   my @teapot_errors = ();    ## errors are pushed into this as encountered
   $params->{method} = $method_discovery_struct->{httpMethod} || 'GET'
-    if (not defined $params->{method});
+      if (not defined $params->{method});
   push(@teapot_errors,
-"method mismatch - you requested a $params->{method} which conflicts with discovery spec requirement for $method_discovery_struct->{httpMethod}"
+    "method mismatch - you requested a $params->{method} which conflicts with discovery spec requirement for $method_discovery_struct->{httpMethod}"
   ) if ($params->{method} !~ /^$method_discovery_struct->{httpMethod}$/sxim);
-  
+
   ## Set default path iff not set by user - NB - will prepend baseUrl later
   $params->{path} = $method_discovery_struct->{path} unless $params->{path};
   push @teapot_errors, 'path is a required parameter' unless $params->{path};
 
   push @teapot_errors,
-    $self->_interpolate_path_parameters_append_query_params_and_return_errors(
-    $params, $method_discovery_struct);
+      $self->_interpolate_path_parameters_append_query_params_and_return_errors($params, $method_discovery_struct);
 
-  $params->{path} =~ s/^\///sxmg;    ## remove leading '/'  from path
+  $params->{path} =~ s/^\///sxmg;                                            ## remove leading '/'  from path
   $params->{path} = "$api_discovery_struct->{baseUrl}/$params->{path}"
-    unless $params->{path} =~
-    /^$api_discovery_struct->{baseUrl}/ixsmg;    ## prepend baseUrl if required
+      unless $params->{path} =~ /^$api_discovery_struct->{baseUrl}/ixsmg;    ## prepend baseUrl if required
 
   ## if errors - add detail available in the discovery struct for the method and service to aid debugging
   push @teapot_errors,
-qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_discovery_struct->{ownerName} $api_discovery_struct->{canonicalName} $api_discovery_struct->{version} with id $method_discovery_struct->{id} as described by discovery document version $api_discovery_struct->{discoveryVersion} revision $api_discovery_struct->{revision} with documentation at $api_discovery_struct->{documentationLink} \nDescription: $method_discovery_struct->{description}\n}
-    if @teapot_errors;
+      qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_discovery_struct->{ownerName} $api_discovery_struct->{canonicalName} $api_discovery_struct->{version} with id $method_discovery_struct->{id} as described by discovery document version $api_discovery_struct->{discoveryVersion} revision $api_discovery_struct->{revision} with documentation at $api_discovery_struct->{documentationLink} \nDescription: $method_discovery_struct->{description}\n}
+      if @teapot_errors;
 
   return @teapot_errors;
 }
@@ -533,55 +522,57 @@ qq{ $api_discovery_struct->{title} $api_discovery_struct->{rest} API into $api_d
 
 #small subs to convert between these_types to theseTypes of params
 #TODO- should probs move this into a Util module
-sub camel { shift if @_ > 1; $_[0] =~ s/ _(\w) /\u$1/grx };
-sub snake { shift if @_ > 1; $_[0] =~ s/([[:upper:]])/_\l$1/grx };
+sub camel { shift if @_ > 1; $_[0] =~ s/ _(\w) /\u$1/grx }
+sub snake { shift if @_ > 1; $_[0] =~ s/([[:upper:]])/_\l$1/grx }
 
 ##################################################
-sub _interpolate_path_parameters_append_query_params_and_return_errors
-{
-  my ( $self, $params, $discovery_struct ) = @_;
+sub _interpolate_path_parameters_append_query_params_and_return_errors {
+  my ($self, $params, $discovery_struct) = @_;
   my @teapot_errors = ();
 
   my @get_query_params = ();
 
   #create a hash of whatever the expected params may be
-  my %path_params; my $param_regex = qr/\{ \+? ([^\}]+) \}/x;
+  my %path_params;
+  my $param_regex = qr/\{ \+? ([^\}]+) \}/x;
   if ($params->{path} ne $discovery_struct->{origPath}) {
+
     #check if the path was given as a custom path. If it is, just
     #interpolate things directly, and assume the user is responsible
-    %path_params = map { $_ => 'custom' } ($params->{path} =~ /$param_regex/xg); 
+    %path_params = map { $_ => 'custom' } ($params->{path} =~ /$param_regex/xg);
   } else {
+
     #label which param names are from the normal path and from the
     #flat path
     %path_params = map { $_ => 'plain' } ($discovery_struct->{path} =~ /$param_regex/xg);
     if ($discovery_struct->{flatPath}) {
-      %path_params = (%path_params, 
-	map { $_ => 'flat' } ($discovery_struct->{flatPath} =~ /$param_regex/xg) )
+      %path_params = (%path_params, map { $_ => 'flat' } ($discovery_struct->{flatPath} =~ /$param_regex/xg));
     }
   }
 
 
-
   #switch the path we're dealing with to the flat path if any of
   #the parameters match the flat path
-  $params->{path} = $discovery_struct->{flatPath} 
-    if grep { $_ eq 'flat' } map {$path_params{camel $_} || ()} keys %{ $params->{options} };
+  $params->{path} = $discovery_struct->{flatPath}
+      if grep { $_ eq 'flat' }
+      map { $path_params{ camel $_} || () } keys %{ $params->{options} };
 
 
   #loop through params given, placing them in the path or query,
   #or leaving them for the request body
-  for my $param_name ( keys %{ $params->{options} } ) {
+  for my $param_name (keys %{ $params->{options} }) {
 
     #first check if it needs to be interpolated into the path
-    if ($path_params{$param_name} || $path_params{camel $param_name}) { 
+    if ($path_params{$param_name} || $path_params{ camel $param_name}) {
+
       #pull out the value from the hash, and remove the key
       my $param_value = delete $params->{options}{$param_name};
-      
+
       #Camelize the param name if not passed in customly, allowing
       #the user to pass in camelCase or snake_case param names.
       #This implictly allows for a non camelCased param to be left
       #alone in a custom param.
-      $param_name = camel $param_name if $path_params{camel $param_name};
+      $param_name = camel $param_name if $path_params{ camel $param_name};
 
       #first deal with any param that doesn't have a plus, b/c
       #those just get interpolated
@@ -589,40 +580,46 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
 
       #if there's a plus in the path spec, we need more work
       if ($params->{path} =~ /\{ \+ $param_name \}/x) {
-	my $pattern = $discovery_struct->{parameters}{$param_name}{pattern};
-	#if the given param matches google's pattern for the
-	#param, just interpolate it straight
-	if ($param_value =~ /$pattern/) {
-	  $params->{path} =~ s/\{\+$param_name\}/$param_value/;
-	} else {
-	  #N.B. perhaps support passing an arrayref or csv for those
-	  #params such as jobs.projects.jobs.delete which have two
-	  #dynamic parts. But for now, unnecessary
-	  
-	  #remove the regexy parts of the pattern to interpolate it
-	  #into the path, assuming the user has provided just the
-	  #dynamic portion of the param. 
-	  $pattern =~ s/^\^ | \$$//gx; my $placeholder = qr/ \[ \^ \/ \] \+ /x;
-	  $params->{path} =~ s/\{\+$param_name\}/$pattern/x;
-	  $params->{path} =~ s/$placeholder/$param_value/x;
-	  push @teapot_errors, "Not enough parameters given for {+$param_name}."
-	    if $params->{path} =~ /$placeholder/;
-	}
+        my $pattern = $discovery_struct->{parameters}{$param_name}{pattern};
+
+        #if the given param matches google's pattern for the
+        #param, just interpolate it straight
+        if ($param_value =~ /$pattern/) {
+          $params->{path} =~ s/\{\+$param_name\}/$param_value/;
+        } else {
+
+          #N.B. perhaps support passing an arrayref or csv for those
+          #params such as jobs.projects.jobs.delete which have two
+          #dynamic parts. But for now, unnecessary
+
+          #remove the regexy parts of the pattern to interpolate it
+          #into the path, assuming the user has provided just the
+          #dynamic portion of the param.
+          $pattern =~ s/^\^ | \$$//gx;
+          my $placeholder = qr/ \[ \^ \/ \] \+ /x;
+          $params->{path} =~ s/\{\+$param_name\}/$pattern/x;
+          $params->{path} =~ s/$placeholder/$param_value/x;
+          push @teapot_errors, "Not enough parameters given for {+$param_name}."
+              if $params->{path} =~ /$placeholder/;
+        }
       }
+
       #skip to the next run, so I don't need an else clause later
-      next; #I don't like nested if-elses
+      next;    #I don't like nested if-elses
     }
+
     #if it's not in the list of params, then it goes in the
     #request body, and our work here is done
     next unless $discovery_struct->{parameters}{$param_name};
 
     #it must be a GET type query param, so push the name and value
     #on our param stack and take it off of the options list
-    push @get_query_params,  $param_name, delete $params->{options}{$param_name};  
+    push @get_query_params, $param_name, delete $params->{options}{$param_name};
   }
 
   #if there are any query params...
-  if ( @get_query_params ) {
+  if (@get_query_params) {
+
     #interpolate and escape the get query params built up in our
     #former for loop
     $params->{path} .= ($params->{path} =~ /\?/) ? '&' : '?';
@@ -631,12 +628,11 @@ sub _interpolate_path_parameters_append_query_params_and_return_errors
 
   #interpolate default value for path params if not given. Needed
   #for things like the gmail API, where userID is 'me' by default
-  for my $param_name ( $params->{path} =~ /$param_regex/g ) {
+  for my $param_name ($params->{path} =~ /$param_regex/g) {
     my $param_value = $discovery_struct->{parameters}{$param_name}{default};
     $params->{path} =~ s/\{$param_name\}/$param_value/ if $param_value;
   }
-  push @teapot_errors, "Missing a parameter for {$_}." 
-    for $params->{path} =~ /$param_regex/g;
+  push @teapot_errors, "Missing a parameter for {$_}." for $params->{path} =~ /$param_regex/g;
 
   #print pp $params;
   #exit;
@@ -671,7 +667,7 @@ sub has_scope_to_access_api_endpoint {
     ## assume permission not granted until we find a matching scope
     my $required_scope_count = 0;
     ## if the final count of scope constraints = 0 then we will assume permission is granted - this has proven necessary for the experimental Google My Business because scopes are not defined in the current discovery data as at 14/10/18
-    for my $method_scope (map { s/\/$//xr } @{ $method_spec->{scopes} }) {
+    for my $method_scope (map {s/\/$//xr} @{ $method_spec->{scopes} }) {
       $required_scope_count++;
       $granted = 1 if defined $configured_scopes_hash{$method_scope};
       last         if $granted;
@@ -688,7 +684,7 @@ sub has_scope_to_access_api_endpoint {
 #TODO: Consider rename to return_fetched_google_v1_apis_discovery_structure
 #
 #TODO - handle auth required error and resubmit request with OAUTH headers if response indicates
-#       access requires auth ( when exceed free access limits )        
+#       access requires auth ( when exceed free access limits )
 
 =head1 METHODS DELEGATED TO WebService::GoogleAPI::Client::Discovery
 

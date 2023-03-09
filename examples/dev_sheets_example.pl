@@ -19,16 +19,19 @@ use Text::Table;
 #print ref($sub1);
 #exit;
 
-require './EXAMPLE_HELPERS.pm'; ## check_api_endpoint_and_user_scopes() and display_api_summary_and_return_versioned_api_string()
+require './EXAMPLE_HELPERS.pm'
+    ;    ## check_api_endpoint_and_user_scopes() and display_api_summary_and_return_versioned_api_string()
 
 my $config = {
-  api => 'sheets', # sheets:v4
-  debug => 01,
-  sheet_id => $ENV{GOOGLE_SHEET_ID} || $ARGV[0], #  @ARGV[0] - The sheet ID can be obtained using the Drive API or you can copy the ID from the URL if open sheet in browser
+  api      => 'sheets',               # sheets:v4
+  debug    => 01,
+  sheet_id => $ENV{GOOGLE_SHEET_ID}
+      || $ARGV[0]
+  , #  @ARGV[0] - The sheet ID can be obtained using the Drive API or you can copy the ID from the URL if open sheet in browser
   sheet_update_range => 'Sheet1!A1:A2',
-  do => { ## allows to filter which blocks of example code are run
-      '' => 0,
-      'sheets.spreadsheets.values.update' => 1,
+  do                 => {                 ## allows to filter which blocks of example code are run
+    ''                                  => 0,
+    'sheets.spreadsheets.values.update' => 1,
 
   }
 };
@@ -87,7 +90,6 @@ assumes gapi.json configuration in working directory with scoped project and use
 =cut
 
 
-
 =head2 SHEETS V4 API ENDPOINTS
 
 	sheets:v4.spreadsheets.batchUpdate
@@ -128,79 +130,78 @@ my $DEBUG = 1;
 
 ##    BASIC CLIENT CONFIGURATION
 
-if   ( -e './gapi.json' ) { say "auth file exists" }
-else                      { croak( 'I only work if gapi.json is here' ); }
-;    ## prolly better to fail on setup ?
-my $gapi_agent        = WebService::GoogleAPI::Client->new( debug => $DEBUG, gapi_json => 'gapi.json' );
+if   (-e './gapi.json') { say "auth file exists" }
+else                    { croak('I only work if gapi.json is here'); }
+;                                                   ## prolly better to fail on setup ?
+my $gapi_agent        = WebService::GoogleAPI::Client->new(debug => $DEBUG, gapi_json => 'gapi.json');
 my $aref_token_emails = $gapi_agent->auth_storage->get_token_emails_from_storage;
-my $user              = $aref_token_emails->[0];                                                             ## default to the first user
-$gapi_agent->user( $user );
+my $user              = $aref_token_emails->[0];    ## default to the first user
+$gapi_agent->user($user);
 
 say "Running tests with default user email = $user";
-say 'Root cache folder: ' . $gapi_agent->discovery->chi->root_dir();                                         ## cached content temporary directory
+say 'Root cache folder: ' . $gapi_agent->discovery->chi->root_dir();    ## cached content temporary directory
 
 
 my $gapi_client = $gapi_agent;
 
 ####
 ####
-####            DISPLAY AN OVERVIEW OF THE API VERSIONS 
+####            DISPLAY AN OVERVIEW OF THE API VERSIONS
 ####            AND SELECT THE PREFERRED VERSION IF NOT SPECIFIED
 ####
 
 #display_api_summary_and_return_versioned_api_string( $gapi_client, $config->{api}, 'v1beta2' );
-my $versioned_api = display_api_summary_and_return_versioned_api_string( $gapi_client, $config->{api} );
+my $versioned_api = display_api_summary_and_return_versioned_api_string($gapi_client, $config->{api});
 
 say "Versioned version of API = $versioned_api ";
 #exit;
 ## interestingly an auth'd request is denied without the correct scope .. so can't use that to find the missing scope :)
-my $methods = $gapi_client->methods_available_for_google_api_id( $versioned_api );
- say join("\n\t", "DNS API END POINTS:\n", sort keys %$methods );
+my $methods = $gapi_client->methods_available_for_google_api_id($versioned_api);
+say join("\n\t", "DNS API END POINTS:\n", sort keys %$methods);
 #exit;
 
 
+if ($config->{do}{'sheets.spreadsheets.values.update'}) {
+  #############################################################################
+  ## drive:v3
+  ####
+  ####
+  ####            sheets.spreadsheets.values.update -
+  ####            https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update
 
-if ( $config->{do}{'sheets.spreadsheets.values.update'})
-{
-    #############################################################################
-    ## drive:v3
-    ####
-    ####
-    ####            sheets.spreadsheets.values.update - 
-    ####            https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update
-
-    check_api_endpoint_and_user_scopes( $gapi_client, "$versioned_api.spreadsheets.values.update" );
+  check_api_endpoint_and_user_scopes($gapi_client, "$versioned_api.spreadsheets.values.update");
 
 
-    ####
-    ####
-    ####            EXECUTE API - sheets.spreadsheets.values.update
-    ####
-    ####
+  ####
+  ####
+  ####            EXECUTE API - sheets.spreadsheets.values.update
+  ####
+  ####
 
-    my $options = { 
-                            spreadsheetId => $config->{sheet_id},
-                            valueInputOption => 'RAW',
-                            range => $config->{sheet_update_range},
-                            majorDimension => 'ROWS',
-                            'values' => [[99],[98]],
-                           responseValueRenderOption => 'FORMATTED_VALUE',
-                           includeValuesInResponse => 'true'
-                            
-                    } ;
+  my $options = {
+    spreadsheetId             => $config->{sheet_id},
+    valueInputOption          => 'RAW',
+    range                     => $config->{sheet_update_range},
+    majorDimension            => 'ROWS',
+    'values'                  => [ [99], [98] ],
+    responseValueRenderOption => 'FORMATTED_VALUE',
+    includeValuesInResponse   => 'true'
 
-    my $r = $gapi_client->api_query(  api_endpoint_id => "$versioned_api.spreadsheets.values.update",  
-    #path => 'v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}&responseValueRenderOption=FORMATTED_VALUE',
-                                    options => $options,
-                            #        cb_method_discovery_modify => sub { 
-                            #          my  $meth_spec  = shift; 
-                            #          $meth_spec->{parameters}{valueInputOption}{location} = 'path';
-                            #          $meth_spec->{path} = "v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}";
-                            #          return $meth_spec;
-                            #        }
-                                    );
-    print dd  $r->json; # ->json;
-    ############################################################################
+  };
+
+  my $r = $gapi_client->api_query(
+    api_endpoint_id => "$versioned_api.spreadsheets.values.update",
+#path => 'v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}&responseValueRenderOption=FORMATTED_VALUE',
+    options => $options,
+   #        cb_method_discovery_modify => sub {
+   #          my  $meth_spec  = shift;
+   #          $meth_spec->{parameters}{valueInputOption}{location} = 'path';
+   #          $meth_spec->{path} = "v4/spreadsheets/{spreadsheetId}/values/{range}?valueInputOption={valueInputOption}";
+   #          return $meth_spec;
+   #        }
+  );
+  print dd $r->json;    # ->json;
+  ############################################################################
 }
 
 

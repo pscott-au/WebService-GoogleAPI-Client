@@ -28,7 +28,8 @@ the L<WebService::GoogleAPI::Client> object this is set on.
 The location of the gapi.json file. Default to gapi.json in the current directory.
 
 =cut
-has 'path' => ( is => 'rw', default => './gapi.json' );    # default is gapi.json
+
+has 'path' => (is => 'rw', default => './gapi.json');    # default is gapi.json
 
 =attr tokensfile
 
@@ -36,7 +37,8 @@ A Config::JSON object that contains the parsed gapi.json file. Authomatically se
 at object instantiation.
 
 =cut
-has 'tokensfile' => ( is => 'rw' );  # Config::JSON object pointer
+
+has 'tokensfile' => (is => 'rw');                        # Config::JSON object pointer
 
 # NOTE- this type of class has getters and setters b/c the implementation of
 # getting and setting depends on what's storing
@@ -62,7 +64,7 @@ Returns the access token for the current user.
 sub get_access_token {
   my ($self) = @_;
   my $value = $self->get_from_storage('access_token');
-  return $value
+  return $value;
 }
 
 =method refresh_access_token
@@ -78,10 +80,10 @@ token at a time, and if you request another access token via the flow it will op
 you only asked for an access token.
 
 =cut
+
 sub refresh_access_token {
   my ($self) = @_;
-  my %p = map { ( $_ => $self->get_from_storage($_) ) }
-     qw/client_id client_secret refresh_token/;
+  my %p = map { ($_ => $self->get_from_storage($_)) } qw/client_id client_secret refresh_token/;
 
   croak <<MISSINGCREDS unless $p{refresh_token};
 If your credentials are missing the refresh_token - consider removing the auth at
@@ -100,7 +102,7 @@ MISSINGCREDS
 sub get_token_emails_from_storage {
   my ($self) = @_;
   my $tokens = $self->get_from_storage('tokens');
-  return [keys %$tokens];
+  return [ keys %$tokens ];
 }
 
 =method get_from_storage
@@ -109,23 +111,25 @@ A method to get stored fields from the gapi.json file. Will retrieve tokens for
 the current user, and other fields from the global config.
 
 =cut
+
 sub get_from_storage {
   my ($self, $key) = @_;
   if ($key =~ /_token/) {
-    return $self->tokensfile->get("gapi/tokens/${\$self->user}/$key")
+    return $self->tokensfile->get("gapi/tokens/${\$self->user}/$key");
   } else {
-    return $self->tokensfile->get("gapi/$key")
+    return $self->tokensfile->get("gapi/$key");
   }
 }
 
 sub get_scopes_from_storage_as_array {
   carp 'get_scopes_from_storage_as_array is being deprecated, please use the more succint scopes accessor';
-  return $_[0]->scopes
+  return $_[0]->scopes;
 }
 
 # NOTE - the scopes are stored as a space seperated list, and this method
 # returns an arrayref
 #
+
 =method scopes
 
 Read-only accessor returning the list of scopes configured in the gapi.json file.
@@ -133,7 +137,7 @@ Read-only accessor returning the list of scopes configured in the gapi.json file
 
 sub scopes {
   my ($self) = @_;
-  return [split / /, $self->tokensfile->get('gapi/scopes')];
+  return [ split / /, $self->tokensfile->get('gapi/scopes') ];
 }
 
 9011;

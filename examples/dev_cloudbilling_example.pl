@@ -18,18 +18,14 @@ https://www.googleapis.com/auth/cloud-platform
 
 =cut
 
-if ( my @x = test_function() )
-{
+if (my @x = test_function()) {
   say 'ok' . @x;
-}
-else
-{
+} else {
   say 'no ok' . @x;
 }
 
-sub test_function
-{
+sub test_function {
   #return carp('foo'); ## returns 1
-  carp( 'bar' );
+  carp('bar');
   return;
 }

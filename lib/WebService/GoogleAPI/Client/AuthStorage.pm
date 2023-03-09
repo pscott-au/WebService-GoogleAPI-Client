@@ -1,4 +1,5 @@
 use strictures;
+
 package WebService::GoogleAPI::Client::AuthStorage;
 
 # ABSTRACT: Role for classes which store your auth credentials
@@ -36,6 +37,7 @@ will use when making requests.
 =cut
 
 has user => is => 'rw';
+
 =attr user
 
 The user that an access token should be returned for. Is read/write. May be
@@ -45,6 +47,7 @@ falsy, depending on the backend.
 # this is managed by the BUILD in ::Client::UserAgent,
 # and by the BUILD in ::Client
 has ua => is => 'rw', weak_ref => 1;
+
 =attr ua
 
 An weak reference to the WebService::GoogleAPI::Client::UserAgent that this is
@@ -81,22 +84,26 @@ WebService::GoogleAPI::Client::AccessToken instance. If you choose to return suc
 
 =end :list
 =cut
+
 requires qw/
-  scopes
-  refresh_access_token
-  get_access_token
-/;
+    scopes
+    refresh_access_token
+    get_access_token
+    /;
 
 around get_access_token => sub {
   my ($orig, $self) = @_;
-  my $user = $self->user;
+  my $user   = $self->user;
   my $scopes = $self->scopes;
 
   my $token = $self->$orig;
   my $class = 'WebService::GoogleAPI::Client::AccessToken';
   return $token if ref $token eq $class;
   return WebService::GoogleAPI::Client::AccessToken->new(
-    user => $user, token => $token, scopes => $scopes );
+    user   => $user,
+    token  => $token,
+    scopes => $scopes
+  );
 };
 
 =method refresh_user_token
@@ -122,19 +129,17 @@ Will die with the error message from Google if the refresh fails.
 
 sub refresh_user_token {
   my ($self, $params) = @_;
-  my $tx = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' =>
-    form => { %$params, grant_type => 'refresh_token' }
-  );
+  my $tx = $self->ua->post(
+    'https://www.googleapis.com/oauth2/v4/token' => form => { %$params, grant_type => 'refresh_token' });
   my $new_token = $tx->res->json('/access_token');
   unless ($new_token) {
-    croak "Failed to refresh access token: ",
-      join ' - ', map $tx->res->json("/$_"), qw/error error_description/
-      if $tx->res->json;
+    croak "Failed to refresh access token: ", join ' - ', map $tx->res->json("/$_"), qw/error error_description/
+        if $tx->res->json;
     # if the error doesn't come from google
     croak "Unknown error refreshing access token";
   }
 
-  return $new_token
+  return $new_token;
 }
 
 
@@ -152,18 +157,15 @@ Will die with the error message from Google if the refresh fails.
 
 sub refresh_service_account_token {
   my ($self, $jwt) = @_;
-  my $tx = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' => form =>
-    $jwt->as_form_data
-  );
+  my $tx        = $self->ua->post('https://www.googleapis.com/oauth2/v4/token' => form => $jwt->as_form_data);
   my $new_token = $tx->res->json('/access_token');
   unless ($new_token) {
-    croak "Failed to get access token: ",
-      join ' - ', map $tx->res->json("/$_"), qw/error error_description/
-      if $tx->res->json;
+    croak "Failed to get access token: ", join ' - ', map $tx->res->json("/$_"), qw/error error_description/
+        if $tx->res->json;
     # if the error doesn't come from google
     croak "Unknown error getting access token";
   }
-  return $new_token
+  return $new_token;
 }
 
 1;

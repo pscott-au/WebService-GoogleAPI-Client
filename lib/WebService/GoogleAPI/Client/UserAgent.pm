@@ -8,6 +8,7 @@ package WebService::GoogleAPI::Client::UserAgent;
 use Moo;
 
 extends 'Mojo::UserAgent';
+
 #extends 'Mojo::UserAgent::Mockable';
 use WebService::GoogleAPI::Client::AuthStorage::GapiJSON;
 use Mojo::UserAgent;
@@ -15,32 +16,34 @@ use Data::Dump qw/pp/;    # for dev debug
 
 use Carp qw/croak carp cluck/;
 
-has 'do_autorefresh'                => ( is => 'rw', default => 1 );
-has 'debug'                         => ( is => 'rw', default => 0 );
-has 'auth_storage' => ( 
-  is => 'rw', 
+has 'do_autorefresh' => (is => 'rw', default => 1);
+has 'debug'          => (is => 'rw', default => 0);
+has 'auth_storage'   => (
+  is      => 'rw',
   default => sub {
-    WebService::GoogleAPI::Client::AuthStorage::GapiJSON->new
+    WebService::GoogleAPI::Client::AuthStorage::GapiJSON->new;
   },
   handles => [qw/get_access_token scopes user/],
   trigger => 1,
-  isa => sub {
+  isa     => sub {
     my $role = 'WebService::GoogleAPI::Client::AuthStorage';
-    die "auth_storage must implement the $role role to work!" unless $_[0]->does($role)
+    die "auth_storage must implement the $role role to work!"
+        unless $_[0]->does($role);
   },
   lazy => 1
 );
 
 sub _trigger_auth_storage {
   my ($self) = @_;
+
   # give the auth_storage a ua
   # TODO - this seems like code smell to me. Should these storage things be
   # roles that get applied to this ua?
-  $self->auth_storage->ua($self)
+  $self->auth_storage->ua($self);
 }
 
 ## NB - could cache using https://metacpan.org/pod/Mojo::UserAgent::Cached
-#  TODO: Review source of this for ideas 
+#  TODO: Review source of this for ideas
 
 
 ## NB - used by both Client and Discovery
@@ -72,9 +75,9 @@ sub header_with_bearer_auth_token {
   if (my $token = $self->get_access_token) {
     $headers->{Authorization} = "Bearer $token";
   } else {
+
     # TODO - why is this not fatal?
-    carp 
-"Can't build Auth header, couldn't get an access token. Is your AuthStorage set up correctly?";
+    carp "Can't build Auth header, couldn't get an access token. Is your AuthStorage set up correctly?";
   }
   return $headers;
 }
@@ -101,18 +104,16 @@ sub build_http_transaction {
   my $http_method   = uc($params->{httpMethod}) || 'GET';    # uppercase ?
   my $optional_data = $params->{options}        || '';
   my $path          = $params->{path}
-    || cluck('path parameter required for build_http_transaction');
+      || cluck('path parameter required for build_http_transaction');
   my $no_auth = $params->{no_auth}
-    || 0;    ## default to including auth header - ie not setting no_auth
+      || 0;    ## default to including auth header - ie not setting no_auth
   my $headers = $params->{headers} || {};
 
   cluck 'Attention! You are using POST, but no payload specified'
-    if (($http_method eq 'POST') && !defined $optional_data);
+      if (($http_method eq 'POST') && !defined $optional_data);
   cluck "build_http_transaction:: $http_method $path " if ($self->debug > 11);
-  cluck
-"$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction"
-    . pp $params
-    unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
+  cluck "$http_method Not a SUPPORTED HTTP method parameter specified to build_http_transaction" . pp $params
+      unless $http_method =~ /^GET|PATH|PUT|POST|PATCH|DELETE$/ixm;
 
   ## NB - headers not passed if no_auth
   $headers = $self->header_with_bearer_auth_token($headers) unless $no_auth;
@@ -123,23 +124,18 @@ sub build_http_transaction {
       return $self->build_tx($http_method => $path => $headers);
     } else {
       if (ref($optional_data) eq 'HASH') {
-        return $self->build_tx(
-          $http_method => $path => $headers => json => $optional_data);
-      } elsif (
-        ref($optional_data) eq
-        '')    ## am assuming is a post with options containing a binary payload
+        return $self->build_tx($http_method => $path => $headers => json => $optional_data);
+      } elsif (ref($optional_data) eq '')    ## am assuming is a post with options containing a binary payload
       {
-        return $self->build_tx(
-          $http_method => $path => $headers => $optional_data);
+        return $self->build_tx($http_method => $path => $headers => $optional_data);
       }
 
     }
-  } else { ## DELETE or GET
-    return $self->build_tx(
-      $http_method => $path => $headers => form => $optional_data)
-      if ($http_method eq 'GET');
+  } else {    ## DELETE or GET
+    return $self->build_tx($http_method => $path => $headers => form => $optional_data)
+        if ($http_method eq 'GET');
     return $self->build_tx($http_method => $path => $headers)
-      if ($http_method eq 'DELETE');
+        if ($http_method eq 'DELETE');
   }
 
   #return undef; ## assert: should never get here
@@ -184,12 +180,11 @@ Returns L<Mojo::Message::Response> object
 # NOTE validated means that we assume checking against discovery specs has already been done.
 sub validated_api_query {
   my ($self, $params) = @_;
-  
+
   ## assume is a GET for the URI at $params
-  if (ref($params) eq '')
-  {
+  if (ref($params) eq '') {
     cluck("transcribing $params to a hashref for validated_api_query")
-      if $self->debug;
+        if $self->debug;
     my $val = $params;
     $params = { path => $val, method => 'get', options => {}, };
   }
@@ -205,8 +200,8 @@ sub validated_api_query {
   $res->{_token} = $self->get_access_token;
 
   if (($res->code == 401) && $self->do_autorefresh) {
-    cluck "Your access token was expired. Attemptimg to update it automatically..."
-      if ($self->debug > 11);
+    cluck "Your access token was expired. Attempting to update it automatically..."
+        if ($self->debug > 11);
 
     $self->auth_storage->refresh_access_token($self);
 
@@ -216,11 +211,11 @@ sub validated_api_query {
     return $res;
   } elsif ($res->code == 429) {
     cluck('HTTP 429 - you hit a rate limit. Try again later');
-    return $res
+    return $res;
   }
   return $res if $res->code == 200;
-  return $res if $res->code == 204;  ## NO CONTENT - INDICATES OK FOR DELETE ETC
-  return $res if $res->code == 400;  ## general failure
+  return $res if $res->code == 204;    ## NO CONTENT - INDICATES OK FOR DELETE ETC
+  return $res if $res->code == 400;    ## general failure
   cluck("unhandled validated_api_query response code " . $res->code);
   return $res;
 }

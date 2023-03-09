@@ -21,7 +21,7 @@ use feature 'say';
 
 my $fname = '~/google/computerproscomau-99cb495aa2ff.json';
 $fname = '/Users/peter/google/computerproscomau-99cb495aa2ff.json';
-my $tokensfile = Config::JSON->new( $fname );
+my $tokensfile = Config::JSON->new($fname);
 
 #print Dumper $tokensfile;
 
@@ -36,7 +36,7 @@ PEM CONTENTS GO HERE
 -----END PRIVATE KEY-----
 ];
 
-$private_key_string = $tokensfile->get( 'private_key' );
+$private_key_string = $tokensfile->get('private_key');
 
 my $time = time;
 
@@ -51,7 +51,7 @@ my $jwt = JSON::WebToken->encode(
 
     #scope => 'https://www.googleapis.com/auth/admin.directory.user',
     scope =>
-      'email profile https://www.googleapis.com/auth/plus.profile.emails.read https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/contacts.readonly https://mail.google.com https://www.googleapis.com/auth/plus.business.manage',
+        'email profile https://www.googleapis.com/auth/plus.profile.emails.read https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/contacts.readonly https://mail.google.com https://www.googleapis.com/auth/plus.business.manage',
     aud => 'https://www.googleapis.com/oauth2/v3/token',
     exp => $time + 3600,
     iat => $time,
@@ -72,40 +72,37 @@ my $jwt = JSON::WebToken->encode(
 );
 
 # Now post it to google
-my $ua = LWP::UserAgent->new();    #'https://www.googleapis.com/oauth2/v3/token
-my $response = $ua->post( 'https://www.googleapis.com/oauth2/v3/token', { grant_type => encode_entities( 'urn:ietf:params:oauth:grant-type:jwt-bearer' ), assertion => $jwt } );
+my $ua       = LWP::UserAgent->new();                                    #'https://www.googleapis.com/oauth2/v3/token
+my $response = $ua->post('https://www.googleapis.com/oauth2/v3/token',
+  { grant_type => encode_entities('urn:ietf:params:oauth:grant-type:jwt-bearer'), assertion => $jwt });
 
-unless ( $response->is_success() )
-{
-  die( $response->code, "\n", $response->content, "\n" );
+unless ($response->is_success()) {
+  die($response->code, "\n", $response->content, "\n");
 }
 
 say "got this far";
-my $data = decode_json( $response->content );
+my $data = decode_json($response->content);
 
 
-say $data->{ access_token };
+say $data->{access_token};
 
 # The token is added to the HTTP authentication header as a bearer
 my $api_ua = LWP::UserAgent->new();
-$api_ua->default_header( Authorization => 'Bearer ' . $data->{ access_token } );
+$api_ua->default_header(Authorization => 'Bearer ' . $data->{access_token});
 
 # get the details for a user
 #my $api_response = $api_ua->get('https://www.googleapis.com/admin/directory/v1/users/');# .encode_entities('peter@shogundriver.com'));
 #my $api_response = $api_ua->get('https://www.googleapis.com/gmail/v1/users/me/messages?q=newer_than:1d;to:peter@shotgundriver.com' ); #.encode_entities('peter@shogundriver.com'));
 #my $api_response = $api_ua->get('https://www.googleapis.com/gmail/v1/users/peter@shotgundriver.com/messages');
-my $api_response = $api_ua->get( 'https://www.googleapis.com/gmail/v1/users/peter@shotgundriver.com/profile' );
-if ( $api_response->is_success )
-{
-  my $api_data = decode_json( $api_response->content );
+my $api_response = $api_ua->get('https://www.googleapis.com/gmail/v1/users/peter@shotgundriver.com/profile');
+if ($api_response->is_success) {
+  my $api_data = decode_json($api_response->content);
   use Data::Dumper;
-  print Dumper( $api_data );
-}
-else
-{
+  print Dumper($api_data);
+} else {
   print "Error:\n";
-  print "Code was ", $api_response->code,    "\n";
-  print "Msg: ",     $api_response->message, "\n";
+  print "Code was ",            $api_response->code,    "\n";
+  print "Msg: ",                $api_response->message, "\n";
   print $api_response->content, "\n";
   die;
 }

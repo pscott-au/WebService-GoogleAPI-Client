@@ -14,20 +14,20 @@ use WebService::GoogleAPI::Client;
 use WebService::GoogleAPI::Client::Discovery;
 
 my $package = 'WebService::GoogleAPI::Client::Discovery';
-my $tmp = tempdir;
-my $cache = CHI->new(driver => 'File', root_dir => $tmp->to_string);
+my $tmp     = tempdir;
+my $cache   = CHI->new(driver => 'File', root_dir => $tmp->to_string);
 
 ok my $disco = WebService::GoogleAPI::Client::Discovery->new(chi => $cache), 'instanciation works';
 
 subtest 'WebService::GoogleAPI::Client::Discovery class properties' => sub {
   #TODO- these tests are stupid, ne? bakajanaikana?
   is ref($disco->ua), 'WebService::GoogleAPI::Client::UserAgent',
-    'ua property is of type WebService::GoogleAPI::Client::UserAgent';
+      'ua property is of type WebService::GoogleAPI::Client::UserAgent';
 
   like ref($disco->chi), qr/^CHI::Driver/xm,
-    'chi property (WebService::GoogleAPI::Client::Discovery->new->chi) is of sub-type CHI::Driver::';
+      'chi property (WebService::GoogleAPI::Client::Discovery->new->chi) is of sub-type CHI::Driver::';
 
-  note( "SESSION DEFAULT CHI Root Directory = " . $disco->chi->root_dir );
+  note("SESSION DEFAULT CHI Root Directory = " . $disco->chi->root_dir);
   is $disco->debug, '0', 'debug property defaults to 0';
 };
 
@@ -39,114 +39,120 @@ subtest 'discover_all' => sub {
   subtest 'hits the wire with no cache' => sub {
     like $disco->discover_all->{items}, bag {
       item hash {
-        field kind => "discovery#directoryItem";
-        field id => "gmail:v1";
-        field name => "gmail";
+        field kind    => "discovery#directoryItem";
+        field id      => "gmail:v1";
+        field name    => "gmail";
         field version => "v1";
-        field title => "Gmail API";
+        field title   => "Gmail API";
         etc;
       };
       etc;
     }, 'got a reasonable discovery document';
-    like $disco->stats, {
-      cache => { get => 0 },
-      network => { get => 1 }
-    }, 'used the network';
+    like $disco->stats,
+        {
+          cache   => { get => 0 },
+          network => { get => 1 }
+        },
+        'used the network';
   };
 
   subtest 'uses cache if available' => sub {
     like $disco->discover_all->{items}, bag {
       item hash {
-        field kind => "discovery#directoryItem";
-        field id => "gmail:v1";
-        field name => "gmail";
+        field kind    => "discovery#directoryItem";
+        field id      => "gmail:v1";
+        field name    => "gmail";
         field version => "v1";
-        field title => "Gmail API";
+        field title   => "Gmail API";
         etc;
       };
       etc;
     }, 'got a reasonable discovery document';
-    like $disco->stats, {
-      cache => { get => 1 },
-      network => { get => 1 }
-    }, 'used the cache';
+    like $disco->stats,
+        {
+          cache   => { get => 1 },
+          network => { get => 1 }
+        },
+        'used the cache';
   };
 
   subtest 'Ignores cache if passed $force flag' => sub {
     like $disco->discover_all(1)->{items}, bag {
       item hash {
-        field kind => "discovery#directoryItem";
-        field id => "gmail:v1";
-        field name => "gmail";
+        field kind    => "discovery#directoryItem";
+        field id      => "gmail:v1";
+        field name    => "gmail";
         field version => "v1";
-        field title => "Gmail API";
+        field title   => "Gmail API";
         etc;
       };
       etc;
     }, 'got a reasonable discovery document';
-    like $disco->stats, {
-      cache => { get => 1 },
-      network => { get => 2 }
-    }, 'used the network';
+    like $disco->stats,
+        {
+          cache   => { get => 1 },
+          network => { get => 2 }
+        },
+        'used the network';
   };
 
   subtest 'Ignores cache if expired' => sub {
     $disco->chi->set($disco->discover_key, {}, 'now');
     like $disco->discover_all->{items}, bag {
       item hash {
-        field kind => "discovery#directoryItem";
-        field id => "gmail:v1";
-        field name => "gmail";
+        field kind    => "discovery#directoryItem";
+        field id      => "gmail:v1";
+        field name    => "gmail";
         field version => "v1";
-        field title => "Gmail API";
+        field title   => "Gmail API";
         etc;
       };
       etc;
     }, 'got a reasonable discovery document';
 
-    like $disco->stats, {
-      cache => { get => 1 },
-      network => { get => 3 }
-    }, 'used the network';
+    like $disco->stats,
+        {
+          cache   => { get => 1 },
+          network => { get => 3 }
+        },
+        'used the network';
   };
 
   subtest 'Uses authenticated request when asked' => sub {
     skip_all 'needs real credentials' unless has_credentials;
     my $obj = $disco->new;
     set_credentials($obj);
-    like $obj->discover_all(1,1)->{items}, bag {
+    like $obj->discover_all(1, 1)->{items}, bag {
       item hash {
-        field kind => "discovery#directoryItem";
-        field id => "gmail:v1";
-        field name => "gmail";
+        field kind    => "discovery#directoryItem";
+        field id      => "gmail:v1";
+        field name    => "gmail";
         field version => "v1";
-        field title => "Gmail API";
+        field title   => "Gmail API";
         etc;
       };
       etc;
     }, 'got a reasonable discovery document';
-    like $obj->stats, {
-      network => { authorized => 1 }
-    }, 'used the credentials';
+    like $obj->stats, { network => { authorized => 1 } }, 'used the credentials';
   };
-}; #end of discover_all subtest
+};    #end of discover_all subtest
 
 subtest 'Augmenting the api' => sub {
   my $to_augment = {
-    'version' => 'v4',
-    'preferred' => 1,
-    'title' => 'Google My Business API',
-    'description' => 'The Google My Business API provides an interface for managing business location information on Google.',
-    'id' => 'mybusiness:v4',
-    'kind' => 'discovery#directoryItem',
+    'version'     => 'v4',
+    'preferred'   => 1,
+    'title'       => 'Google My Business API',
+    'description' =>
+        'The Google My Business API provides an interface for managing business location information on Google.',
+    'id'                => 'mybusiness:v4',
+    'kind'              => 'discovery#directoryItem',
     'documentationLink' => "https://developers.google.com/my-business/",
-    'icons' => {
-      "x16"=> "http://www.google.com/images/icons/product/search-16.gif",
-      "x32"=> "http://www.google.com/images/icons/product/search-32.gif"
+    'icons'             => {
+      "x16" => "http://www.google.com/images/icons/product/search-16.gif",
+      "x32" => "http://www.google.com/images/icons/product/search-32.gif"
     },
-    'discoveryRestUrl' =>
-    'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
-    'name' => 'mybusiness'
+    'discoveryRestUrl' => 'https://developers.google.com/my-business/samples/mybusiness_google_rest_v4p2.json',
+    'name'             => 'mybusiness'
   };
 
   $disco->augment_with($to_augment);
@@ -167,42 +173,39 @@ subtest 'checking for API availablity' => sub {
 
   like $list, hash {
     field gmail => hash {
-      field version => bag { item 'v1'; etc; };
-      field documentationLink => bag { item 'https://developers.google.com/gmail/api/'; etc; };
-      field discoveryRestUrl => bag { item 'https://gmail.googleapis.com/$discovery/rest?version=v1'; etc; };
+      field version           => bag { item 'v1';                                                      etc; };
+      field documentationLink => bag { item 'https://developers.google.com/gmail/api/';                etc; };
+      field discoveryRestUrl  => bag { item 'https://gmail.googleapis.com/$discovery/rest?version=v1'; etc; };
       end;
     };
     etc;
   }, 'collapsed structure as expected';
 
   subtest 'service_exists' => sub {
-    ok !$disco->service_exists('yourfez'), 'non-extant tells us such';
-    ok $disco->service_exists('gmail'), 'verified that gmail exists';
-    ok !$disco->service_exists('Gmail'), 'is case sensitive';
+    ok !$disco->service_exists('yourfez'),         'non-extant tells us such';
+    ok $disco->service_exists('gmail'),            'verified that gmail exists';
+    ok !$disco->service_exists('Gmail'),           'is case sensitive';
     ok $disco->service_exists('youtubeAnalytics'), 'gets youtube analytics';
   };
 
   subtest 'available_version' => sub {
-    is $disco->available_versions('gmail'), [ 'v1' ], 'got gmail';
-    is $disco->available_versions('GMAIL'), [], 'case sensitive gmail';
+    is $disco->available_versions('gmail'), ['v1'], 'got gmail';
+    is $disco->available_versions('GMAIL'), [],     'case sensitive gmail';
     is $disco->available_versions('firestore'), bag { item $_ for qw/v1 v1beta1 v1beta2/; end },
-      'got many versions for firestore';
-    is $disco->available_versions('youtubeAnalytics'), [ 'v2' ],
-      'got correct only one version for youtube analytics';
-    is $disco->available_versions('yourfez'), [], 'empty for non-existant';
+        'got many versions for firestore';
+    is $disco->available_versions('youtubeAnalytics'), ['v2'], 'got correct only one version for youtube analytics';
+    is $disco->available_versions('yourfez'),          [],     'empty for non-existant';
   };
 
   subtest 'latest_stable_version' => sub {
-    is $disco->latest_stable_version('gmail'), 'v1', 'got for gmail';
-    is $disco->latest_stable_version('compute'), 'v1', 'got for compute';
-    is $disco->latest_stable_version('bigqueryreservation'),
-      'v1', 'ignores alphas AND betas';
+    is $disco->latest_stable_version('gmail'),               'v1', 'got for gmail';
+    is $disco->latest_stable_version('compute'),             'v1', 'got for compute';
+    is $disco->latest_stable_version('bigqueryreservation'), 'v1', 'ignores alphas AND betas';
   };
 
   subtest 'list_api_ids' => sub {
     for my $id (qw/gmail compute bigqueryreservation/) {
-      like scalar($disco->list_api_ids), qr/$id/,
-        "has an entry for $id in scalar mode";
+      like scalar($disco->list_api_ids), qr/$id/, "has an entry for $id in scalar mode";
       like [ $disco->list_api_ids ], bag {
         item $id;
         etc;
@@ -211,29 +214,27 @@ subtest 'checking for API availablity' => sub {
   };
 
   subtest 'process_api_version' => sub {
-    is $disco->process_api_version('gmail'), 
-      { api => 'gmail', version => 'v1' },
-      'got default';
+    is $disco->process_api_version('gmail'), { api => 'gmail', version => 'v1' }, 'got default';
 
-    is $disco->process_api_version({ api => 'gmail' }), 
-      { api => 'gmail', version => 'v1' },
-      'got default from hashref';
+    is $disco->process_api_version({ api => 'gmail' }),
+        { api => 'gmail', version => 'v1' },
+        'got default from hashref';
 
-    is $disco->process_api_version('gmail:v9000'), 
-      { api => 'gmail', version => 'v9000' },
-      'take a version if given (even if imaginary)';
+    is $disco->process_api_version('gmail:v9000'),
+        { api => 'gmail', version => 'v9000' },
+        'take a version if given (even if imaginary)';
 
-    is $disco->process_api_version({ api => 'gmail', version => 'v2' }), 
-      { api => 'gmail', version => 'v2' },
-      'take a version if given';
+    is $disco->process_api_version({ api => 'gmail', version => 'v2' }),
+        { api => 'gmail', version => 'v2' },
+        'take a version if given';
 
     like dies { $disco->process_api_version('fleurbop') },
-      qr/fleurbop .* not .* valid .* API/, 'errors on non-found api';
+        qr/fleurbop .* not .* valid .* API/, 'errors on non-found api';
   };
 
 };
 
-# TODO - we need to deal with issues when you can't find a method. 
+# TODO - we need to deal with issues when you can't find a method.
 # We had a bug once where google updated, but our cached discovery document
 # didn't and we kept crashing b/c it couldn't find the old version that we were
 # using (b/c we were relying on the default version, i think)
