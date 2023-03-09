@@ -13,12 +13,13 @@ extends 'Mojo::UserAgent';
 use WebService::GoogleAPI::Client::AuthStorage::GapiJSON;
 use Mojo::UserAgent;
 use Data::Dump qw/pp/;    # for dev debug
+use Data::Printer filters => 'Web';
 
 use Carp qw/croak carp cluck/;
 
 has 'do_autorefresh' => (is => 'rw', default => 1);
 has 'debug'          => (is => 'rw', default => 0);
-has 'auth_storage'   => (
+has 'auth_storage' => (
   is      => 'rw',
   default => sub {
     WebService::GoogleAPI::Client::AuthStorage::GapiJSON->new;
@@ -198,6 +199,10 @@ sub validated_api_query {
   #      do this promise-wise
   my $res = $self->start($tx)->res;
   $res->{_token} = $self->get_access_token;
+  if (!$res->code) {
+    cluck "Response has no code! Network error? here's the object:\n" . np $res;
+    return $res;
+  }
 
   if (($res->code == 401) && $self->do_autorefresh) {
     cluck "Your access token was expired. Attempting to update it automatically..."
@@ -216,7 +221,7 @@ sub validated_api_query {
   return $res if $res->code == 200;
   return $res if $res->code == 204;    ## NO CONTENT - INDICATES OK FOR DELETE ETC
   return $res if $res->code == 400;    ## general failure
-  cluck("unhandled validated_api_query response code " . $res->code);
+  cluck("unhandled validated_api_query response code; here's the object:\n" . np $res);
   return $res;
 }
 
